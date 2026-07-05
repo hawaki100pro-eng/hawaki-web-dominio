@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hawaki – Panel de Administración</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Slackside+One&display=swap" rel="stylesheet">
+<style>
+:root{--rose:#E8607A;--rose-light:#F9D6DD;--rose-dark:#C2415A;--blue:#3B6FA0;--blue-light:#D0E4F7;--cream:#FFF8F9;--text:#1a1a2e;--text-muted:#6b7280;--white:#fff;--green:#10b981;--red:#ef4444;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+
+/* ── LOGIN ── */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,var(--rose-light),var(--blue-light));}
+.login-box{background:var(--white);border-radius:24px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(59,111,160,.2);}
+.login-box h1{font-family:'Slackside One',cursive;font-size:2.4rem;color:var(--rose);text-align:center;margin-bottom:4px;}
+.login-box p{text-align:center;color:var(--text-muted);font-size:.85rem;margin-bottom:24px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.field input,.field select,.field textarea{width:100%;border:2px solid var(--blue-light);border-radius:10px;padding:11px 14px;font-family:'Poppins',sans-serif;font-size:.9rem;color:var(--text);transition:border-color .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--rose);}
+.btn{width:100%;background:linear-gradient(90deg,var(--rose),var(--rose-dark));color:var(--white);border:none;border-radius:12px;padding:13px;font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.btn:hover{opacity:.9;}
+.btn:disabled{background:#d1d5db;cursor:not-allowed;}
+.btn-secondary{background:var(--blue-light);color:var(--blue);}
+.btn-danger{background:#fee2e2;color:var(--red);}
+.btn-green{background:var(--green);}
+.login-error{background:#fee2e2;color:var(--red);border-radius:10px;padding:10px 14px;font-size:.82rem;margin-bottom:16px;display:none;}
+
+/* ── PANEL ── */
+.panel{display:none;max-width:1000px;margin:0 auto;padding:0 16px 60px;}
+.panel-header{background:#f45e94;margin:0 -16px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.1);}
+.panel-header .logo{font-family:'Slackside One',cursive;font-size:1.8rem;color:var(--white);}
+.panel-header .actions{display:flex;gap:8px;}
+.hbtn{background:rgba(255,255,255,.2);color:var(--white);border:none;border-radius:20px;padding:8px 16px;font-family:'Poppins',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .2s;}
+.hbtn:hover{background:rgba(255,255,255,.35);}
+.section-title{font-size:1.2rem;font-weight:700;margin:28px 0 16px;color:var(--blue);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+
+/* Product form card */
+.form-card{background:var(--white);border-radius:20px;padding:24px;box-shadow:0 4px 24px rgba(59,111,160,.1);margin-bottom:28px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid .full{grid-column:1/-1;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+
+/* Colors editor */
+.color-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;background:var(--cream);border-radius:12px;padding:10px;}
+.color-row input[type=text]{flex:1;min-width:120px;border:1.5px solid var(--blue-light);border-radius:8px;padding:8px 10px;font-family:'Poppins',sans-serif;font-size:.85rem;}
+.color-thumb{width:46px;height:46px;border-radius:8px;object-fit:cover;border:2px solid var(--white);box-shadow:0 1px 4px rgba(0,0,0,.15);}
+.color-thumb-empty{width:46px;height:46px;border-radius:8px;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#bbb;}
+.mini-btn{border:none;border-radius:8px;padding:8px 12px;font-family:'Poppins',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;}
+.mini-rose{background:var(--rose-light);color:var(--rose-dark);}
+.mini-red{background:#fee2e2;color:var(--red);}
+.upload-status{font-size:.72rem;color:var(--green);font-weight:600;}
+
+/* Product list */
+.plist{display:flex;flex-direction:column;gap:12px;}
+.pitem{background:var(--white);border-radius:16px;padding:14px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 2px 12px rgba(59,111,160,.08);flex-wrap:wrap;}
+.pitem.inactive{opacity:.55;}
+.pitem img{width:60px;height:60px;border-radius:10px;object-fit:cover;flex-shrink:0;}
+.pitem .noimg{width:60px;height:60px;border-radius:10px;background:var(--rose-light);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;}
+.pitem-info{flex:1;min-width:150px;}
+.pitem-name{font-weight:600;font-size:.92rem;}
+.pitem-meta{font-size:.75rem;color:var(--text-muted);}
+.pitem-price{font-weight:700;color:var(--blue);font-size:1rem;}
+.pitem-actions{display:flex;gap:6px;flex-wrap:wrap;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--blue);color:var(--white);border-radius:12px;padding:12px 24px;font-size:.88rem;font-weight:500;z-index:999;transition:transform .3s;max-width:90vw;text-align:center;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.spinner{width:36px;height:36px;border:4px solid var(--rose-light);border-top-color:var(--rose);border-radius:50%;margin:30px auto;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h1>Hawaki</h1>
+    <p>Panel de Administración 🔐</p>
+    <div class="login-error" id="loginError"></div>
+    <div class="field">
+      <label>Correo electrónico</label>
+      <input type="email" id="loginEmail" placeholder="tu@correo.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
+  </div>
+</div>
+
+<!-- ══════════ PANEL ══════════ -->
+<div class="panel" id="panel">
+  <div class="panel-header">
+    <span class="logo">Hawaki Admin</span>
+    <div class="actions">
+      <button class="hbtn" onclick="window.open('index.html','_blank')">👁 Ver tienda</button>
+      <button class="hbtn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <span id="formTitle">➕ Nuevo Producto</span>
+    <button class="mini-btn mini-rose" id="cancelEditBtn" style="display:none;" onclick="resetForm()">Cancelar edición</button>
+  </div>
+
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="field">
+        <label>Nombre del producto *</label>
+        <input type="text" id="fNombre" placeholder="Ej: Sandalia OA María">
+      </div>
+      <div class="field">
+        <label>Modelo (código) *</label>
+        <input type="text" id="fModelo" placeholder="Ej: MARÍA">
+      </div>
+      <div class="field">
+        <label>Categoría *</label>
+        <select id="fCategoria">
+          <option value="corcho">Corcho Ortopédico</option>
+          <option value="plataformas">Plataformas</option>
+          <option value="yute">Yute</option>
+          <option value="ortopedicas">Ortopédicas Comfort Altas</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Precio ($) *</label>
+        <input type="number" id="fPrecio" step="0.01" min="0" placeholder="Ej: 29.99">
+      </div>
+      <div class="field">
+        <label>Etiqueta (badge)</label>
+        <select id="fBadge">
+          <option value="">Sin etiqueta</option>
+          <option value="Nuevo">Nuevo</option>
+          <option value="Popular">Popular</option>
+          <option value="Comfort">Comfort</option>
+          <option value="Eco">Eco</option>
+          <option value="Oferta">Oferta</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Características (una por línea)</label>
+        <textarea id="fCaract" rows="3" placeholder="Plantilla anatómica&#10;Suela antideslizante&#10;Materiales premium"></textarea>
+      </div>
+      <div class="full">
+        <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Colores y fotos</label>
+        <div id="colorsEditor"></div>
+        <button class="mini-btn mini-rose" onclick="addColorRow()">+ Agregar color</button>
+      </div>
+    </div>
+    <br>
+    <button class="btn" id="saveBtn" onclick="saveProduct()">💾 Guardar Producto</button>
+  </div>
+
+  <div class="section-title"><span>📦 Productos del catálogo</span></div>
+  <div class="plist" id="plist">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════ CONFIG ══════════
+const SUPABASE_URL = 'https://vbezdulxpmwrhppomlru.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiZXpkdWx4cG13cmhwcG9tbHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MDYyNzQsImV4cCI6MjA5ODM4MjI3NH0.LNC6GUlHfS7lYhASHqgBBeIMrKQ1lhwEx9riUInNVtw';
+
+const CATEGORIAS = {
+  corcho: 'Corcho Ortopédico',
+  plataformas: 'Plataformas',
+  yute: 'Yute',
+  ortopedicas: 'Ortopédicas Comfort Altas'
+};
+
+let session = null;
+let products = [];
+let editingId = null;
+let colorRows = []; // {nombre, img, hex}
+
+// ══════════ AUTH ══════════
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if(!email || !pass){ errEl.textContent = 'Ingresa tu correo y contraseña.'; errEl.style.display = 'block'; return; }
+  
+  document.getElementById('loginBtn').disabled = true;
+  document.getElementById('loginBtn').textContent = 'Ingresando...';
+  
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.access_token){
+      throw new Error(data.error_description || data.msg || 'Credenciales incorrectas');
+    }
+    session = data;
+    sessionStorage.setItem('hawaki_session', JSON.stringify(data));
+    showPanel();
+  } catch(err){
+    errEl.textContent = '❌ ' + (err.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : err.message);
+    errEl.style.display = 'block';
+  } finally {
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').textContent = 'Ingresar';
+  }
+}
+
+function doLogout(){
+  session = null;
+  sessionStorage.removeItem('hawaki_session');
+  document.getElementById('panel').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function showPanel(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('panel').style.display = 'block';
+  resetForm();
+  loadProducts();
+}
+
+// Restore session if exists
+(function(){
+  const saved = sessionStorage.getItem('hawaki_session');
+  if(saved){
+    try { session = JSON.parse(saved); showPanel(); } catch(e){}
+  }
+})();
+
+function authHeaders(){
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${session.access_token}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+// ══════════ COMPRESIÓN DE IMÁGENES ══════════
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      const maxDim = 1200;
+      let { width, height } = img;
+      if(Math.max(width, height) > maxDim){
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      // white background (for transparent PNGs)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => {
+        if(blob) resolve(blob);
+        else reject(new Error('Error al comprimir'));
+      }, 'image/webp', 0.82);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ══════════ SUBIR FOTO ══════════
+async function uploadPhoto(file, rowIndex){
+  const statusEl = document.getElementById(`upstatus-${rowIndex}`);
+  statusEl.textContent = 'Comprimiendo...';
+  try {
+    const compressed = await compressImage(file);
+    statusEl.textContent = `Subiendo (${Math.round(compressed.size/1024)} KB)...`;
+    
+    // Safe filename
+    const cleanName = (colorRows[rowIndex].nombre || 'color').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '-');
+    const fileName = `${Date.now()}-${cleanName}.webp`;
+    
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/productos/${fileName}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'image/webp'
+      },
+      body: compressed
+    });
+    if(!res.ok){
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al subir la foto');
+    }
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/productos/${fileName}`;
+    colorRows[rowIndex].img = publicUrl;
+    renderColorRows();
+    showToast('📸 Foto subida correctamente');
+  } catch(err){
+    statusEl.textContent = '';
+    showToast('❌ ' + err.message);
+    if(err.message.includes('JWT') || err.message.includes('token')){
+      showToast('Tu sesión expiró. Vuelve a iniciar sesión.');
+      doLogout();
+    }
+  }
+}
+
+// ══════════ EDITOR DE COLORES ══════════
+function addColorRow(nombre = '', img = null, hex = null){
+  colorRows.push({ nombre, img, hex });
+  renderColorRows();
+}
+
+function removeColorRow(i){
+  colorRows.splice(i, 1);
+  renderColorRows();
+}
+
+function renderColorRows(){
+  const el = document.getElementById('colorsEditor');
+  el.innerHTML = colorRows.map((c, i) => `
+    <div class="color-row">
+      ${c.img
+        ? `<img src="${c.img}" class="color-thumb" alt="">`
+        : `<div class="color-thumb-empty">📷</div>`}
+      <input type="text" placeholder="Nombre del color (Ej: Negro)" value="${c.nombre}" onchange="colorRows[${i}].nombre = this.value">
+      <input type="file" id="file-${i}" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadPhoto(this.files[0], ${i})">
+      <button class="mini-btn mini-rose" onclick="document.getElementById('file-${i}').click()">📸 ${c.img ? 'Cambiar' : 'Subir'} foto</button>
+      <span class="upload-status" id="upstatus-${i}"></span>
+      <button class="mini-btn mini-red" onclick="removeColorRow(${i})">🗑</button>
+    </div>
+  `).join('');
+}
+
+// ══════════ GUARDAR PRODUCTO ══════════
+async function saveProduct(){
+  const nombre = document.getElementById('fNombre').value.trim();
+  const modelo = document.getElementById('fModelo').value.trim();
+  const categoria = document.getElementById('fCategoria').value;
+  const precio = parseFloat(document.getElementById('fPrecio').value);
+  const badge = document.getElementById('fBadge').value || null;
+  const caract = document.getElementById('fCaract').value.split('\n').map(s => s.trim()).filter(Boolean);
+  
+  if(!nombre || !modelo || !precio || precio <= 0){
+    showToast('⚠️ Completa nombre, modelo y precio');
+    return;
+  }
+  if(colorRows.length === 0 || colorRows.every(c => !c.nombre.trim())){
+    showToast('⚠️ Agrega al menos un color con nombre');
+    return;
+  }
+  
+  const colores = colorRows
+    .filter(c => c.nombre.trim())
+    .map(c => ({ nombre: c.nombre.trim(), img: c.img || null, hex: c.hex || null }));
+  
+  const body = {
+    nombre, modelo, categoria,
+    precio: precio.toFixed(2),
+    badge,
+    caracteristicas: caract,
+    colores
+  };
+  
+  document.getElementById('saveBtn').disabled = true;
+  document.getElementById('saveBtn').textContent = 'Guardando...';
+  
+  try {
+    let res;
+    if(editingId){
+      res = await fetch(`${SUPABASE_URL}/rest/v1/productos_tienda?id=eq.${editingId}`, {
+        method: 'PATCH', headers: authHeaders(), body: JSON.stringify(body)
+      });
+    } else {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/productos_tienda`, {
+        method: 'POST', headers: authHeaders(), body: JSON.stringify(body)
+      });
+    }
+    if(!res.ok){
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al guardar');
+    }
+    showToast(editingId ? '✅ Producto actualizado' : '✅ Producto creado');
+    resetForm();
+    loadProducts();
+  } catch(err){
+    showToast('❌ ' + err.message);
+  } finally {
+    document.getElementById('saveBtn').disabled = false;
+    document.getElementById('saveBtn').textContent = '💾 Guardar Producto';
+  }
+}
+
+function resetForm(){
+  editingId = null;
+  document.getElementById('formTitle').textContent = '➕ Nuevo Producto';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  document.getElementById('fNombre').value = '';
+  document.getElementById('fModelo').value = '';
+  document.getElementById('fCategoria').value = 'corcho';
+  document.getElementById('fPrecio').value = '';
+  document.getElementById('fBadge').value = '';
+  document.getElementById('fCaract').value = '';
+  colorRows = [];
+  addColorRow();
+}
+
+// ══════════ LISTA DE PRODUCTOS ══════════
+async function loadProducts(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/productos_tienda?select=*&order=orden.asc,id.asc`, {
+      headers: authHeaders()
+    });
+    if(!res.ok) throw new Error('Error al cargar');
+    products = await res.json();
+    renderList();
+  } catch(err){
+    document.getElementById('plist').innerHTML = `<p style="text-align:center;color:var(--red);">Error al cargar productos. <button class="mini-btn mini-rose" onclick="loadProducts()">Reintentar</button></p>`;
+  }
+}
+
+function renderList(){
+  const el = document.getElementById('plist');
+  if(!products.length){
+    el.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">No hay productos aún. ¡Crea el primero arriba! 👆</p>';
+    return;
+  }
+  el.innerHTML = products.map(p => {
+    const img = (p.colores || []).find(c => c.img);
+    return `
+      <div class="pitem ${p.activo ? '' : 'inactive'}">
+        ${img ? `<img src="${img.img}" alt="">` : `<div class="noimg">👡</div>`}
+        <div class="pitem-info">
+          <div class="pitem-name">${p.nombre} ${p.activo ? '' : '(oculto)'}</div>
+          <div class="pitem-meta">${p.modelo} · ${CATEGORIAS[p.categoria] || p.categoria} · ${(p.colores||[]).length} color(es)</div>
+        </div>
+        <div class="pitem-price">$${parseFloat(p.precio).toFixed(2)}</div>
+        <div class="pitem-actions">
+          <button class="mini-btn mini-rose" onclick="editProduct(${p.id})">✏️ Editar</button>
+          <button class="mini-btn ${p.activo ? 'mini-rose' : 'mini-rose'}" onclick="toggleActive(${p.id}, ${!p.activo})">${p.activo ? '🙈 Ocultar' : '👁 Mostrar'}</button>
+          <button class="mini-btn mini-red" onclick="deleteProduct(${p.id}, '${p.nombre.replace(/'/g, "\\'")}')">🗑</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function editProduct(id){
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = `✏️ Editando: ${p.nombre}`;
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  document.getElementById('fNombre').value = p.nombre;
+  document.getElementById('fModelo').value = p.modelo;
+  document.getElementById('fCategoria').value = p.categoria;
+  document.getElementById('fPrecio').value = parseFloat(p.precio);
+  document.getElementById('fBadge').value = p.badge || '';
+  document.getElementById('fCaract').value = (p.caracteristicas || []).join('\n');
+  colorRows = (p.colores || []).map(c => ({ nombre: c.nombre, img: c.img, hex: c.hex }));
+  if(!colorRows.length) addColorRow();
+  renderColorRows();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function toggleActive(id, newState){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/productos_tienda?id=eq.${id}`, {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify({ activo: newState })
+    });
+    if(!res.ok) throw new Error('Error');
+    showToast(newState ? '👁 Producto visible en la tienda' : '🙈 Producto oculto de la tienda');
+    loadProducts();
+  } catch(err){
+    showToast('❌ No se pudo cambiar la visibilidad');
+  }
+}
+
+async function deleteProduct(id, nombre){
+  if(!confirm(`¿Eliminar "${nombre}" permanentemente?\n\nSi solo quieres que no se vea en la tienda, usa "Ocultar" en su lugar.`)) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/productos_tienda?id=eq.${id}`, {
+      method: 'DELETE', headers: authHeaders()
+    });
+    if(!res.ok) throw new Error('Error');
+    showToast('🗑 Producto eliminado');
+    loadProducts();
+  } catch(err){
+    showToast('❌ No se pudo eliminar');
+  }
+}
+
+// ══════════ TOAST ══════════
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
