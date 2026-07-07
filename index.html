@@ -33,7 +33,7 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .drop-menu .tab-btn{text-align:left;border-radius:10px;display:flex;align-items:center;gap:9px;}
 .cat-dot{width:8px;height:8px;border-radius:50%;background:var(--rose);flex-shrink:0;display:inline-block;}
 .drop-menu .tab-btn.active .cat-dot{background:var(--white);}
-.hero{background:linear-gradient(135deg,var(--rose-light) 0%,var(--blue-light) 100%);background-size:cover;background-position:center;padding:72px 24px 64px;text-align:center;position:relative;min-height:220px;}.hero::before{content:'';position:absolute;inset:0;background:rgba(244,94,148,0.28);z-index:0;}.hero>*{position:relative;z-index:1;}
+.hero{background:linear-gradient(135deg,var(--rose-light) 0%,var(--blue-light) 100%);background-size:cover;background-position:center;width:100%;aspect-ratio:1920/600;}
 .hero h1{font-family:'Slackside One',cursive;font-size:clamp(2rem,5vw,3.6rem);line-height:1.15;color:#ffffff;margin-bottom:12px;text-shadow:0 2px 12px rgba(0,0,0,.25);}
 .hero p{color:#ffffff;font-size:1rem;max-width:480px;margin:0 auto 24px;font-weight:400;text-shadow:0 1px 8px rgba(0,0,0,.3);}
 .hero-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
@@ -154,9 +154,6 @@ footer strong{color:var(--rose);}
   .nav-ico{width:18px;height:18px;}
   .cart-btn{width:42px;height:42px;}
   .cart-btn span.cart-count{min-width:19px;height:19px;font-size:.62rem;top:-5px;right:-5px;}
-  .hero{padding:28px 14px 24px;}
-  .hero h1{font-size:clamp(1.4rem,4vw,2.6rem);}
-  .hero p{font-size:.88rem;}
   .hero-badges{gap:6px;}
   .badge{font-size:.72rem;padding:5px 12px;}
   .section-cats{margin:16px auto 0;padding:0;}
@@ -231,14 +228,7 @@ footer strong{color:var(--rose);}
   </div>
 </header>
 
-<section class="hero" id="heroSection">
-  <p>Los únicos que amamos el trabajo local y externo. Materiales importados con fabricación Ecuatoriana. ❤️</p>
-  <div class="hero-badges">
-    <span class="badge">✦ Envío a domicilio</span>
-    <span class="badge">✦ Tallas 35–40</span>
-    <span class="badge">✦ Envío por Servientrega, costo aparte</span>
-  </div>
-</section>
+<section class="hero" id="heroSection"></section>
 
 <div class="section-cats">
   <div class="cat-row">
