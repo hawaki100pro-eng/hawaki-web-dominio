@@ -11,18 +11,28 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);}
 header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(59,111,160,.08);}
-.header-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:12px;}
-.logo-txt{font-family:'Slackside One',cursive;font-size:2.4rem;color:#ffffff;flex-shrink:0;cursor:pointer;}
+.header-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:12px;position:relative;}
+.logo-txt{font-family:'Slackside One',cursive;font-size:2.4rem;color:#ffffff;flex-shrink:0;cursor:pointer;z-index:2;}
+.header-nav{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;}
+.nav-link{background:none;border:none;color:#ffffff;font-family:'Poppins',sans-serif;font-size:.92rem;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;padding:6px 4px;transition:opacity .2s;}
+.nav-link:hover{opacity:.82;}
+.nav-ico{width:20px;height:20px;}
+.nav-arrow{transition:transform .2s;font-size:.8rem;}
+.nav-divider{width:1px;height:22px;background:rgba(255,255,255,.45);}
 .tab-btn{border:2px solid transparent;border-radius:24px;padding:7px 16px;font-family:'Poppins',sans-serif;font-size:.82rem;cursor:pointer;transition:all .2s;font-weight:500;background:var(--cream);color:var(--text-muted);}
 .tab-btn:hover{border-color:var(--rose-light);color:var(--rose);}
 .tab-btn.active{background:linear-gradient(90deg,var(--rose),var(--rose-dark));color:var(--white);border-color:transparent;}
-.cat-row{display:flex;gap:7px;flex-wrap:wrap;}
-.cart-btn{background:#e8b325;color:var(--white);border:none;border-radius:24px;padding:9px 18px;font-family:'Poppins',sans-serif;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;flex-shrink:0;font-size:.88rem;transition:opacity .2s;}
-.cart-btn:hover{opacity:.88;}
-.cart-count{background:var(--blue);color:var(--white);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;}
+.cat-row{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-start;}
+.cart-btn{background:transparent;color:var(--white);border:2px solid rgba(255,255,255,.9);border-radius:50%;width:46px;height:46px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;position:relative;}
+.cart-btn:hover{background:rgba(255,255,255,.18);}
+.cart-icon{width:22px;height:22px;}
+.cart-count{position:absolute;top:-6px;right:-6px;background:var(--white);color:#f45e94;border:2px solid #f45e94;border-radius:50%;min-width:22px;height:22px;padding:0 4px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;box-sizing:border-box;}
 .drop-btn{background:#5170ff;color:white;border:none;border-radius:24px;padding:10px 20px;font-family:'Poppins',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;}
-.drop-menu{display:none;position:absolute;top:calc(100% + 8px);left:0;background:white;border-radius:16px;box-shadow:0 8px 32px rgba(59,111,160,.18);padding:10px;z-index:99;min-width:220px;flex-direction:column;gap:4px;}
-.drop-menu .tab-btn{text-align:left;border-radius:10px;}
+.drop-menu{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:white;border-radius:16px;box-shadow:0 8px 32px rgba(59,111,160,.18);padding:8px;z-index:99;width:220px;flex-direction:column;gap:3px;}
+@media(max-width:640px){.drop-menu{width:200px;}}
+.drop-menu .tab-btn{text-align:left;border-radius:10px;display:flex;align-items:center;gap:9px;}
+.cat-dot{width:8px;height:8px;border-radius:50%;background:var(--rose);flex-shrink:0;display:inline-block;}
+.drop-menu .tab-btn.active .cat-dot{background:var(--white);}
 .hero{background:linear-gradient(135deg,var(--rose-light) 0%,var(--blue-light) 100%);padding:56px 24px 44px;text-align:center;}
 .hero h1{font-family:'Slackside One',cursive;font-size:clamp(2rem,5vw,3.6rem);line-height:1.15;color:var(--rose);margin-bottom:12px;}
 .hero p{color:var(--text-muted);font-size:1rem;max-width:480px;margin:0 auto 24px;font-weight:300;}
@@ -138,16 +148,28 @@ footer{background:var(--text);color:var(--white);text-align:center;padding:28px 
 footer strong{color:var(--rose);}
 @media(max-width:640px){
   .cat-tabs-header{display:none;}
-  .header-inner{padding:8px 12px;gap:8px;}
-  .cart-btn{padding:7px 12px;font-size:.78rem;}
-  .cart-btn span.cart-count{width:18px;height:18px;font-size:.65rem;}
-  .hero{padding:36px 16px 32px;}
+  .header-inner{padding:8px 10px;gap:6px;flex-wrap:nowrap;}
+  .logo-txt{font-size:1.6rem;}
+  .nav-link{font-size:.82rem;gap:5px;padding:5px 2px;}
+  .nav-ico{width:18px;height:18px;}
+  .cart-btn{width:42px;height:42px;}
+  .cart-btn span.cart-count{min-width:19px;height:19px;font-size:.62rem;top:-5px;right:-5px;}
+  .hero{padding:28px 14px 24px;}
+  .hero h1{font-size:clamp(1.4rem,4vw,2.6rem);}
   .hero p{font-size:.88rem;}
   .hero-badges{gap:6px;}
   .badge{font-size:.72rem;padding:5px 12px;}
-  .section-cats{margin:20px auto 0;padding:0 12px;}
+  .section-cats{margin:16px auto 0;padding:0;}
+  .cat-row{gap:8px;flex-wrap:nowrap;overflow-x:auto;padding:4px 12px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .cat-row::-webkit-scrollbar{display:none;}
+  .tab-btn{padding:7px 14px;font-size:.75rem;white-space:nowrap;flex-shrink:0;}
   .products-wrap{padding:16px 12px 48px;}
-  .products-grid{grid-template-columns:repeat(2,1fr);gap:12px;}
+  .products-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .card-info{padding:10px;}
+  .card-model{font-size:.65rem;}
+  .card-name{font-size:.8rem;margin-bottom:4px;}
+  .card-price{font-size:1rem;margin-bottom:8px;}
+  .card-cta{font-size:.7rem;padding:6px;}
   .card-info{padding:10px 12px;}
   .card-name{font-size:.85rem;}
   .card-price{font-size:1.05rem;margin-bottom:10px;}
@@ -175,6 +197,12 @@ footer strong{color:var(--rose);}
   .products-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
   .card-name{font-size:.78rem;}
   .card-price{font-size:.95rem;}
+  .header-inner{padding:8px 8px;gap:4px;}
+  .logo-txt{font-size:1.45rem;}
+  .logo-txt{font-size:1.35rem;}
+  .nav-link{font-size:.75rem;gap:4px;}
+  .nav-ico{width:16px;height:16px;}
+  .cart-btn{width:40px;height:40px;}
 }
 </style>
 </head>
@@ -183,19 +211,23 @@ footer strong{color:var(--rose);}
 <header>
   <div class="header-inner">
     <span class="logo-txt" onclick="window.scrollTo({top:0,behavior:'smooth'})">Hawaki</span>
-    <div class="cat-dropdown-wrap" style="position:relative;">
-      <button class="drop-btn" onclick="toggleDropdown()">
-        ⭐ Catálogo <span id="drop-arrow" style="transition:transform .2s;">▾</span>
-      </button>
-      <div id="cat-dropdown" class="drop-menu">
-        <button class="tab-btn active" onclick="showCat('todas',this);closeDropdown()">🏠 Todas</button>
-        <button class="tab-btn" onclick="showCat('corcho',this);closeDropdown()">🌿 Corcho Ortopédico</button>
-        <button class="tab-btn" onclick="showCat('plataformas',this);closeDropdown()">👠 Plataformas</button>
-        <button class="tab-btn" onclick="showCat('yute',this);closeDropdown()">🌾 Yute</button>
-        <button class="tab-btn" onclick="showCat('ortopedicas',this);closeDropdown()">💆 Ortopédicas Comfort</button>
+    <nav class="header-nav">
+      <div class="cat-dropdown-wrap" style="position:relative;">
+        <button class="nav-link" onclick="toggleDropdown()">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+          <span>Catálogo</span>
+          <span id="drop-arrow" class="nav-arrow">▾</span>
+        </button>
+        <div id="cat-dropdown" class="drop-menu">
+          <button class="tab-btn active" onclick="showCat('todas',this);closeDropdown()"><span class="cat-dot"></span>Todas</button>
+          <button class="tab-btn" onclick="showCat('corcho',this);closeDropdown()"><span class="cat-dot"></span>Corcho Ortopédico</button>
+          <button class="tab-btn" onclick="showCat('plataformas',this);closeDropdown()"><span class="cat-dot"></span>Plataformas</button>
+          <button class="tab-btn" onclick="showCat('yute',this);closeDropdown()"><span class="cat-dot"></span>Yute</button>
+          <button class="tab-btn" onclick="showCat('ortopedicas',this);closeDropdown()"><span class="cat-dot"></span>Ortopédicas Comfort</button>
+        </div>
       </div>
-    </div>
-    <button class="cart-btn" onclick="toggleCart()">🛍️ Carrito <span class="cart-count" id="cartCount">0</span></button>
+    </nav>
+    <button class="cart-btn" onclick="toggleCart()" aria-label="Carrito"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg><span class="cart-count" id="cartCount">0</span></button>
   </div>
 </header>
 
