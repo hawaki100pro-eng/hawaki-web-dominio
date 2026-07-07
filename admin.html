@@ -100,6 +100,27 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
     </div>
   </div>
 
+  <div class="section-title"><span>🖼️ Banner principal (Hero)</span></div>
+  <div class="form-card">
+    <div style="background:#eef4ff;border-left:4px solid #5170ff;border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:18px;font-size:.82rem;color:#3a4a6b;line-height:1.5;">
+      <strong>📐 Tamaño ideal de la imagen:</strong><br>
+      • Medida recomendada: <strong>1920 × 600 píxeles</strong> (horizontal)<br>
+      • Formato: JPG o PNG · Se comprime automáticamente al subir<br>
+      • Deja el <strong>centro despejado</strong> (ahí no va texto ahora, pero el centro se ve mejor en celular)<br>
+      • En celular la imagen se recorta por los lados — pon lo importante al centro
+    </div>
+    <div id="heroPreviewWrap" style="margin-bottom:16px;display:none;">
+      <div class="pm-label" style="font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Banner actual</div>
+      <img id="heroPreview" src="" alt="Banner actual" style="width:100%;border-radius:12px;border:1px solid var(--blue-light);display:block;">
+    </div>
+    <input type="file" id="heroFile" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadHero(this.files[0])">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn" style="width:auto;" onclick="document.getElementById('heroFile').click()">📸 Subir / Cambiar banner</button>
+      <button class="mini-btn mini-red" id="heroRemoveBtn" style="display:none;" onclick="removeHero()">🗑 Quitar banner</button>
+      <span class="upload-status" id="heroStatus"></span>
+    </div>
+  </div>
+
   <div class="section-title">
     <span id="formTitle">➕ Nuevo Producto</span>
     <button class="mini-btn mini-rose" id="cancelEditBtn" style="display:none;" onclick="resetForm()">Cancelar edición</button>
@@ -222,6 +243,7 @@ function showPanel(){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('panel').style.display = 'block';
   resetForm();
+  loadHero();
   loadProducts();
 }
 
@@ -239,6 +261,99 @@ function authHeaders(){
     'Authorization': `Bearer ${session.access_token}`,
     'Content-Type': 'application/json'
   };
+}
+
+// ══════════ HERO / BANNER ══════════
+async function loadHero(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=valor&clave=eq.hero_imagen`, {
+      headers: authHeaders()
+    });
+    if(!res.ok) return;
+    const data = await res.json();
+    const url = data[0]?.valor;
+    const wrap = document.getElementById('heroPreviewWrap');
+    const removeBtn = document.getElementById('heroRemoveBtn');
+    if(url && url.trim()){
+      document.getElementById('heroPreview').src = url;
+      wrap.style.display = 'block';
+      removeBtn.style.display = 'inline-block';
+    } else {
+      wrap.style.display = 'none';
+      removeBtn.style.display = 'none';
+    }
+  } catch(err){ console.log('loadHero', err); }
+}
+
+async function uploadHero(file){
+  const statusEl = document.getElementById('heroStatus');
+  statusEl.textContent = 'Comprimiendo...';
+  try {
+    const compressed = await compressImageWide(file);
+    statusEl.textContent = `Subiendo (${Math.round(compressed.size/1024)} KB)...`;
+    const fileName = `hero-${Date.now()}.webp`;
+    const up = await fetch(`${SUPABASE_URL}/storage/v1/object/productos/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'image/webp' },
+      body: compressed
+    });
+    if(!up.ok){ const e = await up.json().catch(()=>({})); throw new Error(e.message || 'Error al subir'); }
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/productos/${fileName}`;
+    // save to config table (upsert)
+    const save = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?clave=eq.hero_imagen`, {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify({ valor: publicUrl })
+    });
+    if(!save.ok){ const e = await save.json().catch(()=>({})); throw new Error(e.message || 'Error al guardar'); }
+    statusEl.textContent = '';
+    showToast('🖼️ Banner actualizado');
+    loadHero();
+  } catch(err){
+    statusEl.textContent = '';
+    showToast('❌ ' + err.message);
+    if(err.message.includes('JWT') || err.message.includes('token')){ doLogout(); }
+  }
+}
+
+async function removeHero(){
+  if(!confirm('¿Quitar el banner? La página volverá al fondo de color rosa/azul.')) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?clave=eq.hero_imagen`, {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify({ valor: '' })
+    });
+    if(!res.ok) throw new Error('Error');
+    showToast('🗑 Banner quitado');
+    loadHero();
+  } catch(err){ showToast('❌ No se pudo quitar'); }
+}
+
+// Compresión especial para banner ancho (mantiene 1920px de ancho)
+function compressImageWide(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      const maxW = 1920;
+      let { width, height } = img;
+      if(width > maxW){
+        const scale = maxW / width;
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#f45e94';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Error al comprimir')), 'image/webp', 0.85);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // ══════════ COMPRESIÓN DE IMÁGENES ══════════
