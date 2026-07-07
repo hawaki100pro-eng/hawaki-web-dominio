@@ -33,7 +33,7 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .drop-menu .tab-btn{text-align:left;border-radius:10px;display:flex;align-items:center;gap:9px;}
 .cat-dot{width:8px;height:8px;border-radius:50%;background:var(--rose);flex-shrink:0;display:inline-block;}
 .drop-menu .tab-btn.active .cat-dot{background:var(--white);}
-.hero{background:linear-gradient(135deg,var(--rose-light) 0%,var(--blue-light) 100%);background-size:cover;background-position:center;width:100%;max-width:1200px;margin:0 auto;aspect-ratio:1920/600;border-radius:0 0 16px 16px;}
+.hero{background:linear-gradient(135deg,var(--rose-light) 0%,var(--blue-light) 100%);background-size:cover;background-position:center;width:100%;max-width:1200px;margin:0 auto;aspect-ratio:1920/380;border-radius:0 0 16px 16px;}
 .hero h1{font-family:'Slackside One',cursive;font-size:clamp(2rem,5vw,3.6rem);line-height:1.15;color:#ffffff;margin-bottom:12px;text-shadow:0 2px 12px rgba(0,0,0,.25);}
 .hero p{color:#ffffff;font-size:1rem;max-width:480px;margin:0 auto 24px;font-weight:400;text-shadow:0 1px 8px rgba(0,0,0,.3);}
 .hero-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
@@ -148,6 +148,7 @@ footer{background:var(--text);color:var(--white);text-align:center;padding:28px 
 footer strong{color:var(--rose);}
 @media(max-width:640px){
   .cat-tabs-header{display:none;}
+  .hero{aspect-ratio:1920/600;border-radius:0;}
   .header-inner{padding:8px 10px;gap:6px;flex-wrap:nowrap;}
   .logo-txt{font-size:1.6rem;}
   .nav-link{font-size:.82rem;gap:5px;padding:5px 2px;}
