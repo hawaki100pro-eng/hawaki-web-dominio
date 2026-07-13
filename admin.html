@@ -55,6 +55,16 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 .mini-red{background:#fee2e2;color:var(--red);}
 .upload-status{font-size:.72rem;color:var(--green);font-weight:600;}
 
+/* Tags editor */
+.tags-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.tag-chip{display:flex;align-items:center;gap:8px;background:var(--cream);border:1.5px solid var(--blue-light);border-radius:20px;padding:6px 8px 6px 14px;font-size:.82rem;font-weight:600;}
+.tag-chip .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.tag-chip button{background:#fee2e2;color:var(--red);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.7rem;line-height:1;}
+.color-swatches{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.swatch{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .15s;}
+.swatch:hover{transform:scale(1.1);}
+.swatch.sel{border-color:var(--text);}
+
 /* Sizes editor */
 .size-toggle{display:flex;gap:8px;flex-wrap:wrap;}
 .size-chip{border:2px solid var(--blue-light);background:var(--white);border-radius:10px;width:46px;height:42px;display:flex;align-items:center;justify-content:center;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--text-muted);user-select:none;}
@@ -130,6 +140,17 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
     </div>
   </div>
 
+  <div class="section-title"><span>🏷️ Etiquetas (badges)</span></div>
+  <div class="form-card">
+    <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:14px;">Estas son las etiquetas que puedes poner sobre la foto de un producto (Ej: NUEVO, OFERTA). Crea las que quieras con su color, o elimina las que no uses.</div>
+    <div class="tags-list" id="tagsList"><div class="spinner"></div></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <input type="text" id="newTagName" placeholder="Nombre (Ej: Rebaja)" maxlength="14" style="flex:1;min-width:150px;border:2px solid var(--blue-light);border-radius:10px;padding:11px 14px;font-family:'Poppins',sans-serif;font-size:.9rem;">
+      <div class="color-swatches" id="tagSwatches"></div>
+      <button class="mini-btn mini-rose" onclick="addTag()">+ Crear etiqueta</button>
+    </div>
+  </div>
+
   <div class="section-title">
     <span id="formTitle">➕ Nuevo Producto</span>
     <button class="mini-btn mini-rose" id="cancelEditBtn" style="display:none;" onclick="resetForm()">Cancelar edición</button>
@@ -162,11 +183,6 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
         <label>Etiqueta (badge)</label>
         <select id="fBadge">
           <option value="">Sin etiqueta</option>
-          <option value="Nuevo">Nuevo</option>
-          <option value="Popular">Popular</option>
-          <option value="Comfort">Comfort</option>
-          <option value="Eco">Eco</option>
-          <option value="Oferta">Oferta</option>
         </select>
       </div>
       <div class="field">
@@ -211,11 +227,22 @@ const CATEGORIAS = {
 const TALLAS_OPCIONES = [34,35,36,37,38,39,40,41,42];
 const TALLAS_DEFAULT = [35,36,37,38,39,40];
 
+const TAG_COLORS = [
+  { nombre: 'Dorado', hex: '#D4A017' },
+  { nombre: 'Azul',   hex: '#3B6FA0' },
+  { nombre: 'Rosa',   hex: '#f45e94' },
+  { nombre: 'Negro',  hex: '#1a1a2e' },
+  { nombre: 'Rojo',   hex: '#ef4444' },
+  { nombre: 'Lila',   hex: '#A78BFA' }
+];
+
 let session = null;
 let products = [];
 let editingId = null;
 let colorRows = []; // {nombre, img, hex}
 let selectedSizes = [...TALLAS_DEFAULT];
+let etiquetas = []; // {nombre, color}
+let selTagColor = TAG_COLORS[0].hex;
 
 // ══════════ AUTH ══════════
 async function doLogin(){
@@ -262,6 +289,7 @@ function showPanel(){
   document.getElementById('panel').style.display = 'block';
   resetForm();
   loadHero();
+  loadTags();
   loadProducts();
 }
 
@@ -474,6 +502,111 @@ function renderColorRows(){
   `).join('');
 }
 
+// ══════════ ETIQUETAS (BADGES) ══════════
+async function loadTags(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=valor&clave=eq.etiquetas`, {
+      headers: authHeaders()
+    });
+    if(!res.ok) throw new Error('Error al cargar etiquetas');
+    const data = await res.json();
+    etiquetas = data[0]?.valor ? JSON.parse(data[0].valor) : [];
+  } catch(err){
+    etiquetas = [];
+    console.log('loadTags', err);
+  }
+  renderTags();
+  renderSwatches();
+  refreshBadgeSelect();
+}
+
+async function saveTags(){
+  const valor = JSON.stringify(etiquetas);
+  // Intenta actualizar la fila; si no existe, la crea
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?clave=eq.etiquetas`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify({ valor })
+  });
+  if(!res.ok){ const e = await res.json().catch(()=>({})); throw new Error(e.message || 'Error al guardar'); }
+  const rows = await res.json();
+  if(!rows.length){
+    const ins = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ clave: 'etiquetas', valor })
+    });
+    if(!ins.ok){ const e = await ins.json().catch(()=>({})); throw new Error(e.message || 'Error al crear la configuración de etiquetas'); }
+  }
+}
+
+function renderTags(){
+  const el = document.getElementById('tagsList');
+  if(!etiquetas.length){
+    el.innerHTML = '<span style="font-size:.82rem;color:var(--text-muted);">No hay etiquetas aún. Crea la primera abajo 👇</span>';
+    return;
+  }
+  el.innerHTML = etiquetas.map((t, i) => `
+    <div class="tag-chip">
+      <span class="dot" style="background:${t.color};"></span>
+      ${t.nombre}
+      <button onclick="deleteTag(${i})" title="Eliminar">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderSwatches(){
+  document.getElementById('tagSwatches').innerHTML = TAG_COLORS.map(c => `
+    <div class="swatch ${c.hex === selTagColor ? 'sel' : ''}" style="background:${c.hex};" title="${c.nombre}" onclick="selTagColor='${c.hex}';renderSwatches();"></div>
+  `).join('');
+}
+
+function refreshBadgeSelect(keepValue){
+  const sel = document.getElementById('fBadge');
+  const current = keepValue !== undefined ? keepValue : sel.value;
+  sel.innerHTML = '<option value="">Sin etiqueta</option>' +
+    etiquetas.map(t => `<option value="${t.nombre}">${t.nombre}</option>`).join('');
+  if(current && !etiquetas.some(t => t.nombre === current)){
+    sel.innerHTML += `<option value="${current}">${current}</option>`;
+  }
+  sel.value = current || '';
+}
+
+async function addTag(){
+  const input = document.getElementById('newTagName');
+  const nombre = input.value.trim();
+  if(!nombre){ showToast('⚠️ Escribe el nombre de la etiqueta'); return; }
+  if(etiquetas.some(t => t.nombre.toLowerCase() === nombre.toLowerCase())){
+    showToast('⚠️ Ya existe una etiqueta con ese nombre'); return;
+  }
+  etiquetas.push({ nombre, color: selTagColor });
+  try {
+    await saveTags();
+    input.value = '';
+    showToast('🏷️ Etiqueta creada');
+  } catch(err){
+    etiquetas.pop();
+    showToast('❌ ' + err.message);
+  }
+  renderTags();
+  refreshBadgeSelect();
+}
+
+async function deleteTag(i){
+  const t = etiquetas[i];
+  if(!confirm(`¿Eliminar la etiqueta "${t.nombre}"?\n\nLos productos que la tengan puesta dejarán de mostrarla con su color.`)) return;
+  const backup = [...etiquetas];
+  etiquetas.splice(i, 1);
+  try {
+    await saveTags();
+    showToast('🗑 Etiqueta eliminada');
+  } catch(err){
+    etiquetas = backup;
+    showToast('❌ ' + err.message);
+  }
+  renderTags();
+  refreshBadgeSelect();
+}
+
 // ══════════ EDITOR DE TALLAS ══════════
 function toggleSize(s){
   const i = selectedSizes.indexOf(s);
@@ -621,7 +754,7 @@ function editProduct(id){
   document.getElementById('fModelo').value = p.modelo;
   document.getElementById('fCategoria').value = p.categoria;
   document.getElementById('fPrecio').value = parseFloat(p.precio);
-  document.getElementById('fBadge').value = p.badge || '';
+  refreshBadgeSelect(p.badge || '');
   document.getElementById('fCaract').value = (p.caracteristicas || []).join('\n');
   colorRows = (p.colores || []).map(c => ({ nombre: c.nombre, img: c.img, hex: c.hex }));
   if(!colorRows.length) addColorRow();
