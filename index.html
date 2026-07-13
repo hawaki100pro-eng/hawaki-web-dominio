@@ -81,7 +81,6 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .pmodal-info{flex:1;padding:28px 26px 24px;display:flex;flex-direction:column;gap:15px;}
 .pm-category{font-size:.7rem;color:var(--rose);font-weight:700;text-transform:uppercase;letter-spacing:1.5px;}
 .pm-name{font-family:'Playfair Display',serif;font-size:1.75rem;line-height:1.15;}
-.pm-stars{color:#f59e0b;font-size:.9rem;}
 .pm-price{font-size:2rem;font-weight:700;color:var(--rose);}
 .pm-features{display:flex;flex-direction:column;gap:5px;}
 .pm-feature{font-size:.82rem;color:var(--text-muted);display:flex;align-items:center;gap:7px;}
@@ -97,7 +96,6 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .pm-size-btn{border:2px solid var(--blue-light);background:var(--white);border-radius:10px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:500;cursor:pointer;transition:all .15s;}
 .pm-size-btn:hover{border-color:var(--rose);color:var(--rose);}
 .pm-size-btn.selected{background:var(--rose);border-color:var(--rose);color:var(--white);font-weight:700;}
-.pm-stock{font-size:.8rem;color:#f59e0b;font-weight:500;}
 .pm-add-btn{background:linear-gradient(90deg,var(--rose),var(--rose-dark));color:var(--white);border:none;border-radius:14px;padding:15px;font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s;width:100%;margin-top:auto;}
 .pm-add-btn:hover{opacity:.88;}
 .pm-add-btn:disabled{background:#d1d5db;cursor:not-allowed;}
@@ -265,7 +263,6 @@ footer strong{color:var(--rose);}
         <div>
           <div class="pm-category" id="pm-cat"></div>
           <div class="pm-name" id="pm-name"></div>
-          <div class="pm-stars">★★★★★ <span style="color:var(--text-muted);font-size:.82rem;">4.9</span></div>
           <div class="pm-price" id="pm-price"></div>
         </div>
         <div class="pm-features" id="pm-features"></div>
@@ -277,7 +274,6 @@ footer strong{color:var(--rose);}
           <div class="pm-label">Talla del calzado</div>
           <div class="pm-sizes" id="pm-sizes"></div>
         </div>
-        <div class="pm-stock">⏱ Solo quedan <strong style="margin:0 3px;">5 pares</strong> en stock</div>
         <button class="pm-add-btn" id="pm-add-btn" onclick="addFromModal()" disabled>Elige una talla para continuar</button>
       </div>
     </div>
