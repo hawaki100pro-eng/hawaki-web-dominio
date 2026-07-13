@@ -217,13 +217,7 @@ footer strong{color:var(--rose);}
           <span>Catálogo</span>
           <span id="drop-arrow" class="nav-arrow">▾</span>
         </button>
-        <div id="cat-dropdown" class="drop-menu">
-          <button class="tab-btn active" onclick="showCat('todas',this);closeDropdown()"><span class="cat-dot"></span>Todas</button>
-          <button class="tab-btn" onclick="showCat('corcho',this);closeDropdown()"><span class="cat-dot"></span>Corcho Ortopédico</button>
-          <button class="tab-btn" onclick="showCat('plataformas',this);closeDropdown()"><span class="cat-dot"></span>Plataformas</button>
-          <button class="tab-btn" onclick="showCat('yute',this);closeDropdown()"><span class="cat-dot"></span>Yute</button>
-          <button class="tab-btn" onclick="showCat('ortopedicas',this);closeDropdown()"><span class="cat-dot"></span>Ortopédicas Comfort</button>
-        </div>
+        <div id="cat-dropdown" class="drop-menu"></div>
       </div>
     </nav>
     <button class="cart-btn" onclick="toggleCart()" aria-label="Carrito"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg><span class="cart-count" id="cartCount">0</span></button>
@@ -233,13 +227,7 @@ footer strong{color:var(--rose);}
 <section class="hero" id="heroSection"></section>
 
 <div class="section-cats">
-  <div class="cat-row">
-    <button class="tab-btn active" onclick="showCat('todas',this)">Todas</button>
-    <button class="tab-btn" onclick="showCat('corcho',this)">Corcho Ortopédico</button>
-    <button class="tab-btn" onclick="showCat('plataformas',this)">Plataformas</button>
-    <button class="tab-btn" onclick="showCat('yute',this)">Yute</button>
-    <button class="tab-btn" onclick="showCat('ortopedicas',this)">Ortopédicas Comfort</button>
-  </div>
+  <div class="cat-row" id="catRow"></div>
 </div>
 
 <div class="products-wrap" id="productsWrap">
@@ -332,13 +320,38 @@ footer strong{color:var(--rose);}
 const SUPABASE_URL = 'https://vbezdulxpmwrhppomlru.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiZXpkdWx4cG13cmhwcG9tbHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MDYyNzQsImV4cCI6MjA5ODM4MjI3NH0.LNC6GUlHfS7lYhASHqgBBeIMrKQ1lhwEx9riUInNVtw';
 
-// Nombres de categorías (código -> etiqueta bonita)
-const CATEGORIAS = {
-  corcho: 'Corcho Ortopédico',
-  plataformas: 'Plataformas',
-  yute: 'Colección Yute',
-  ortopedicas: 'Ortopédicas Comfort Altas'
-};
+// Categorías: se cargan desde Supabase; estos son los valores de respaldo
+let CATS = [
+  { id: 'corcho', nombre: 'Corcho Ortopédico' },
+  { id: 'plataformas', nombre: 'Plataformas' },
+  { id: 'yute', nombre: 'Colección Yute' },
+  { id: 'ortopedicas', nombre: 'Ortopédicas Comfort Altas' }
+];
+let CATEGORIAS = {}; // id -> nombre
+
+async function loadCategorias(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=valor&clave=eq.categorias`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    if(res.ok){
+      const data = await res.json();
+      if(data[0]?.valor) CATS = JSON.parse(data[0].valor);
+    }
+  } catch(err){ console.log('Categorias:', err); }
+  CATEGORIAS = {};
+  CATS.forEach(c => { CATEGORIAS[c.id] = c.nombre; });
+  renderCatTabs();
+}
+
+function renderCatTabs(){
+  document.getElementById('cat-dropdown').innerHTML =
+    `<button class="tab-btn active" onclick="showCat('todas',this);closeDropdown()"><span class="cat-dot"></span>Todas</button>` +
+    CATS.map(c => `<button class="tab-btn" onclick="showCat('${c.id}',this);closeDropdown()"><span class="cat-dot"></span>${c.nombre}</button>`).join('');
+  document.getElementById('catRow').innerHTML =
+    `<button class="tab-btn active" onclick="showCat('todas',this)">Todas</button>` +
+    CATS.map(c => `<button class="tab-btn" onclick="showCat('${c.id}',this)">${c.nombre}</button>`).join('');
+}
 
 const SIZES = [35,36,37,38,39,40];
 let PRODUCTS = [];
@@ -611,7 +624,7 @@ async function loadHero(){
 
 // ¡Arrancamos!
 loadHero();
-loadEtiquetas().then(loadProducts);
+Promise.all([loadEtiquetas(), loadCategorias()]).then(loadProducts);
 </script>
 </body>
 </html>

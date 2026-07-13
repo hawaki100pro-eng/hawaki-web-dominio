@@ -140,6 +140,16 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
     </div>
   </div>
 
+  <div class="section-title"><span>📂 Categorías</span></div>
+  <div class="form-card">
+    <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:14px;">Las categorías organizan tu catálogo y aparecen como pestañas en la tienda. Puedes renombrarlas (✏️) o eliminarlas (✕).</div>
+    <div class="tags-list" id="catsList"><div class="spinner"></div></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <input type="text" id="newCatName" placeholder="Nombre de la categoría (Ej: Botas)" maxlength="30" style="flex:1;min-width:180px;border:2px solid var(--blue-light);border-radius:10px;padding:11px 14px;font-family:'Poppins',sans-serif;font-size:.9rem;">
+      <button class="mini-btn mini-rose" onclick="addCat()">+ Crear categoría</button>
+    </div>
+  </div>
+
   <div class="section-title"><span>🏷️ Etiquetas (badges)</span></div>
   <div class="form-card">
     <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:14px;">Estas son las etiquetas que puedes poner sobre la foto de un producto (Ej: NUEVO, OFERTA). Crea las que quieras con su color, o elimina las que no uses.</div>
@@ -168,12 +178,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
       </div>
       <div class="field">
         <label>Categoría *</label>
-        <select id="fCategoria">
-          <option value="corcho">Corcho Ortopédico</option>
-          <option value="plataformas">Plataformas</option>
-          <option value="yute">Yute</option>
-          <option value="ortopedicas">Ortopédicas Comfort Altas</option>
-        </select>
+        <select id="fCategoria"></select>
       </div>
       <div class="field">
         <label>Precio ($) *</label>
@@ -217,12 +222,19 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 const SUPABASE_URL = 'https://vbezdulxpmwrhppomlru.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiZXpkdWx4cG13cmhwcG9tbHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MDYyNzQsImV4cCI6MjA5ODM4MjI3NH0.LNC6GUlHfS7lYhASHqgBBeIMrKQ1lhwEx9riUInNVtw';
 
-const CATEGORIAS = {
-  corcho: 'Corcho Ortopédico',
-  plataformas: 'Plataformas',
-  yute: 'Yute',
-  ortopedicas: 'Ortopédicas Comfort Altas'
-};
+const CATEGORIAS_DEFAULT = [
+  { id: 'corcho', nombre: 'Corcho Ortopédico' },
+  { id: 'plataformas', nombre: 'Plataformas' },
+  { id: 'yute', nombre: 'Colección Yute' },
+  { id: 'ortopedicas', nombre: 'Ortopédicas Comfort Altas' }
+];
+let categorias = [...CATEGORIAS_DEFAULT]; // {id, nombre}
+let CATEGORIAS = {}; // id -> nombre (se reconstruye desde `categorias`)
+function rebuildCatMap(){
+  CATEGORIAS = {};
+  categorias.forEach(c => { CATEGORIAS[c.id] = c.nombre; });
+}
+rebuildCatMap();
 
 const TALLAS_OPCIONES = [34,35,36,37,38,39,40,41,42];
 const TALLAS_DEFAULT = [35,36,37,38,39,40];
@@ -289,6 +301,7 @@ function showPanel(){
   document.getElementById('panel').style.display = 'block';
   resetForm();
   loadHero();
+  loadCategorias();
   loadTags();
   loadProducts();
 }
@@ -502,6 +515,120 @@ function renderColorRows(){
   `).join('');
 }
 
+// ══════════ CATEGORÍAS ══════════
+async function loadCategorias(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=valor&clave=eq.categorias`, {
+      headers: authHeaders()
+    });
+    if(!res.ok) throw new Error('Error al cargar categorías');
+    const data = await res.json();
+    if(data[0]?.valor) categorias = JSON.parse(data[0].valor);
+  } catch(err){ console.log('loadCategorias', err); }
+  rebuildCatMap();
+  renderCats();
+  refreshCategoriaSelect();
+}
+
+function saveCats(){
+  return saveConfig('categorias', JSON.stringify(categorias));
+}
+
+function slugify(nombre){
+  let base = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'categoria';
+  let id = base, n = 2;
+  while(categorias.some(c => c.id === id)){ id = `${base}-${n++}`; }
+  return id;
+}
+
+function renderCats(){
+  const el = document.getElementById('catsList');
+  if(!categorias.length){
+    el.innerHTML = '<span style="font-size:.82rem;color:var(--text-muted);">No hay categorías. Crea la primera abajo 👇 (sin categorías la tienda no muestra productos)</span>';
+    return;
+  }
+  el.innerHTML = categorias.map((c, i) => `
+    <div class="tag-chip">
+      ${c.nombre}
+      <button style="background:var(--rose-light);color:var(--rose-dark);" onclick="renameCat(${i})" title="Renombrar">✏️</button>
+      <button onclick="deleteCat(${i})" title="Eliminar">✕</button>
+    </div>
+  `).join('');
+}
+
+function refreshCategoriaSelect(keepValue){
+  const sel = document.getElementById('fCategoria');
+  const current = keepValue !== undefined ? keepValue : sel.value;
+  sel.innerHTML = categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+  if(current && !categorias.some(c => c.id === current)){
+    sel.innerHTML += `<option value="${current}">${current} (categoría eliminada)</option>`;
+  }
+  if(current) sel.value = current;
+}
+
+async function addCat(){
+  const input = document.getElementById('newCatName');
+  const nombre = input.value.trim();
+  if(!nombre){ showToast('⚠️ Escribe el nombre de la categoría'); return; }
+  if(categorias.some(c => c.nombre.toLowerCase() === nombre.toLowerCase())){
+    showToast('⚠️ Ya existe una categoría con ese nombre'); return;
+  }
+  categorias.push({ id: slugify(nombre), nombre });
+  try {
+    await saveCats();
+    input.value = '';
+    showToast('📂 Categoría creada');
+  } catch(err){
+    categorias.pop();
+    showToast('❌ ' + err.message);
+  }
+  rebuildCatMap();
+  renderCats();
+  refreshCategoriaSelect();
+  renderList();
+}
+
+async function renameCat(i){
+  const c = categorias[i];
+  const nuevo = prompt(`Nuevo nombre para "${c.nombre}":`, c.nombre);
+  if(!nuevo || !nuevo.trim() || nuevo.trim() === c.nombre) return;
+  const anterior = c.nombre;
+  c.nombre = nuevo.trim();
+  try {
+    await saveCats();
+    showToast('✏️ Categoría renombrada');
+  } catch(err){
+    c.nombre = anterior;
+    showToast('❌ ' + err.message);
+  }
+  rebuildCatMap();
+  renderCats();
+  refreshCategoriaSelect();
+  renderList();
+}
+
+async function deleteCat(i){
+  const c = categorias[i];
+  const enUso = products.filter(p => p.categoria === c.id).length;
+  const aviso = enUso
+    ? `⚠️ Hay ${enUso} producto(s) en "${c.nombre}". Si la eliminas, esos productos DEJARÁN DE VERSE en la tienda hasta que les asignes otra categoría.\n\n¿Eliminar de todas formas?`
+    : `¿Eliminar la categoría "${c.nombre}"?`;
+  if(!confirm(aviso)) return;
+  const backup = [...categorias];
+  categorias.splice(i, 1);
+  try {
+    await saveCats();
+    showToast('🗑 Categoría eliminada');
+  } catch(err){
+    categorias = backup;
+    showToast('❌ ' + err.message);
+  }
+  rebuildCatMap();
+  renderCats();
+  refreshCategoriaSelect();
+  renderList();
+}
+
 // ══════════ ETIQUETAS (BADGES) ══════════
 async function loadTags(){
   try {
@@ -520,10 +647,9 @@ async function loadTags(){
   refreshBadgeSelect();
 }
 
-async function saveTags(){
-  const valor = JSON.stringify(etiquetas);
-  // Intenta actualizar la fila; si no existe, la crea
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?clave=eq.etiquetas`, {
+// Guarda un valor en config_tienda: actualiza la fila y si no existe la crea
+async function saveConfig(clave, valor){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?clave=eq.${clave}`, {
     method: 'PATCH',
     headers: { ...authHeaders(), 'Prefer': 'return=representation' },
     body: JSON.stringify({ valor })
@@ -533,10 +659,14 @@ async function saveTags(){
   if(!rows.length){
     const ins = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda`, {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ clave: 'etiquetas', valor })
+      body: JSON.stringify({ clave, valor })
     });
-    if(!ins.ok){ const e = await ins.json().catch(()=>({})); throw new Error(e.message || 'Error al crear la configuración de etiquetas'); }
+    if(!ins.ok){ const e = await ins.json().catch(()=>({})); throw new Error(e.message || `Error al crear la configuración de ${clave}`); }
   }
+}
+
+function saveTags(){
+  return saveConfig('etiquetas', JSON.stringify(etiquetas));
 }
 
 function renderTags(){
@@ -695,7 +825,7 @@ function resetForm(){
   document.getElementById('cancelEditBtn').style.display = 'none';
   document.getElementById('fNombre').value = '';
   document.getElementById('fModelo').value = '';
-  document.getElementById('fCategoria').value = 'corcho';
+  refreshCategoriaSelect(categorias[0]?.id || '');
   document.getElementById('fPrecio').value = '';
   document.getElementById('fBadge').value = '';
   document.getElementById('fCaract').value = '';
@@ -752,7 +882,7 @@ function editProduct(id){
   document.getElementById('cancelEditBtn').style.display = 'inline-block';
   document.getElementById('fNombre').value = p.nombre;
   document.getElementById('fModelo').value = p.modelo;
-  document.getElementById('fCategoria').value = p.categoria;
+  refreshCategoriaSelect(p.categoria);
   document.getElementById('fPrecio').value = parseFloat(p.precio);
   refreshBadgeSelect(p.badge || '');
   document.getElementById('fCaract').value = (p.caracteristicas || []).join('\n');
