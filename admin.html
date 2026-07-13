@@ -119,23 +119,20 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
     </div>
   </div>
 
-  <div class="section-title"><span>🖼️ Banner principal (Hero)</span></div>
+  <div class="section-title"><span>🖼️ Banners principales (hasta 3)</span></div>
   <div class="form-card">
     <div style="background:#eef4ff;border-left:4px solid #5170ff;border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:18px;font-size:.82rem;color:#3a4a6b;line-height:1.5;">
-      <strong>📐 Tamaño ideal de la imagen:</strong><br>
+      <strong>📐 Tamaño ideal de cada imagen:</strong><br>
       • Medida recomendada: <strong>1920 × 600 píxeles</strong> (horizontal)<br>
       • Formato: JPG o PNG · Se comprime automáticamente al subir<br>
-      • Deja el <strong>centro despejado</strong> (ahí no va texto ahora, pero el centro se ve mejor en celular)<br>
-      • En celular la imagen se recorta por los lados — pon lo importante al centro
+      • En celular la imagen se recorta por los lados — pon lo importante al centro<br>
+      • Si subes <strong>más de un banner</strong>, en la tienda aparecen flechas ‹ › para pasar de uno a otro
     </div>
-    <div id="heroPreviewWrap" style="margin-bottom:16px;display:none;">
-      <div class="pm-label" style="font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Banner actual</div>
-      <img id="heroPreview" src="" alt="Banner actual" style="width:100%;border-radius:12px;border:1px solid var(--blue-light);display:block;">
-    </div>
-    <input type="file" id="heroFile" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadHero(this.files[0])">
+    <div id="heroList"></div>
+    <input type="file" id="heroFile" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadHero(this.files[0]); this.value='';">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-      <button class="btn" style="width:auto;" onclick="document.getElementById('heroFile').click()">📸 Subir / Cambiar banner</button>
-      <button class="mini-btn mini-red" id="heroRemoveBtn" style="display:none;" onclick="removeHero()">🗑 Quitar banner</button>
+      <button class="btn" style="width:auto;" id="heroAddBtn" onclick="document.getElementById('heroFile').click()">📸 Agregar banner</button>
+      <span style="font-size:.8rem;color:var(--text-muted);font-weight:600;" id="heroCount"></span>
       <span class="upload-status" id="heroStatus"></span>
     </div>
   </div>
@@ -322,29 +319,47 @@ function authHeaders(){
   };
 }
 
-// ══════════ HERO / BANNER ══════════
+// ══════════ HERO / BANNERS (hasta 3) ══════════
+let heroImgs = [];
+
 async function loadHero(){
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=valor&clave=eq.hero_imagen`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=clave,valor&clave=in.(hero_imagen,hero_imagenes)`, {
       headers: authHeaders()
     });
     if(!res.ok) return;
     const data = await res.json();
-    const url = data[0]?.valor;
-    const wrap = document.getElementById('heroPreviewWrap');
-    const removeBtn = document.getElementById('heroRemoveBtn');
-    if(url && url.trim()){
-      document.getElementById('heroPreview').src = url;
-      wrap.style.display = 'block';
-      removeBtn.style.display = 'inline-block';
-    } else {
-      wrap.style.display = 'none';
-      removeBtn.style.display = 'none';
-    }
+    const multi = data.find(r => r.clave === 'hero_imagenes');
+    const single = data.find(r => r.clave === 'hero_imagen');
+    heroImgs = multi?.valor ? JSON.parse(multi.valor) : [];
+    // Migración: si aún no hay lista pero existe el banner antiguo, úsalo
+    if(!heroImgs.length && single?.valor && single.valor.trim()) heroImgs = [single.valor.trim()];
   } catch(err){ console.log('loadHero', err); }
+  renderHeroList();
+}
+
+function renderHeroList(){
+  const el = document.getElementById('heroList');
+  if(!heroImgs.length){
+    el.innerHTML = '<p style="font-size:.82rem;color:var(--text-muted);margin-bottom:14px;">No hay banners. La tienda muestra el fondo de color rosa/azul.</p>';
+  } else {
+    el.innerHTML = heroImgs.map((u, i) => `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Banner ${i+1}</div>
+        <img src="${u}" alt="Banner ${i+1}" style="width:100%;border-radius:12px;border:1px solid var(--blue-light);display:block;">
+        <button class="mini-btn mini-red" style="margin-top:8px;" onclick="removeHero(${i})">🗑 Quitar banner ${i+1}</button>
+      </div>`).join('');
+  }
+  document.getElementById('heroAddBtn').style.display = heroImgs.length >= 3 ? 'none' : 'inline-block';
+  document.getElementById('heroCount').textContent = `${heroImgs.length} de 3 banners`;
+}
+
+function saveHeroList(){
+  return saveConfig('hero_imagenes', JSON.stringify(heroImgs));
 }
 
 async function uploadHero(file){
+  if(heroImgs.length >= 3){ showToast('⚠️ Ya tienes 3 banners. Quita uno para subir otro.'); return; }
   const statusEl = document.getElementById('heroStatus');
   statusEl.textContent = 'Comprimiendo...';
   try {
@@ -357,16 +372,13 @@ async function uploadHero(file){
       body: compressed
     });
     if(!up.ok){ const e = await up.json().catch(()=>({})); throw new Error(e.message || 'Error al subir'); }
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/productos/${fileName}`;
-    // save to config table (upsert)
-    const save = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?clave=eq.hero_imagen`, {
-      method: 'PATCH', headers: authHeaders(),
-      body: JSON.stringify({ valor: publicUrl })
-    });
-    if(!save.ok){ const e = await save.json().catch(()=>({})); throw new Error(e.message || 'Error al guardar'); }
+    heroImgs.push(`${SUPABASE_URL}/storage/v1/object/public/productos/${fileName}`);
+    try {
+      await saveHeroList();
+    } catch(e){ heroImgs.pop(); throw e; }
     statusEl.textContent = '';
-    showToast('🖼️ Banner actualizado');
-    loadHero();
+    showToast('🖼️ Banner agregado');
+    renderHeroList();
   } catch(err){
     statusEl.textContent = '';
     showToast('❌ ' + err.message);
@@ -374,17 +386,18 @@ async function uploadHero(file){
   }
 }
 
-async function removeHero(){
-  if(!confirm('¿Quitar el banner? La página volverá al fondo de color rosa/azul.')) return;
+async function removeHero(i){
+  if(!confirm(`¿Quitar el banner ${i+1}?${heroImgs.length === 1 ? '\n\nLa página volverá al fondo de color rosa/azul.' : ''}`)) return;
+  const backup = [...heroImgs];
+  heroImgs.splice(i, 1);
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?clave=eq.hero_imagen`, {
-      method: 'PATCH', headers: authHeaders(),
-      body: JSON.stringify({ valor: '' })
-    });
-    if(!res.ok) throw new Error('Error');
+    await saveHeroList();
     showToast('🗑 Banner quitado');
-    loadHero();
-  } catch(err){ showToast('❌ No se pudo quitar'); }
+  } catch(err){
+    heroImgs = backup;
+    showToast('❌ No se pudo quitar');
+  }
+  renderHeroList();
 }
 
 // Compresión especial para banner ancho (mantiene 1920px de ancho)

@@ -36,7 +36,18 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .drop-menu .tab-btn{text-align:left;border-radius:10px;display:flex;align-items:center;gap:9px;}
 .cat-dot{width:8px;height:8px;border-radius:50%;background:var(--rose);flex-shrink:0;display:inline-block;}
 .drop-menu .tab-btn.active .cat-dot{background:var(--white);}
-.hero{background:linear-gradient(135deg,var(--rose-light) 0%,var(--blue-light) 100%);background-size:cover;background-position:center;width:100%;aspect-ratio:1920/380;}
+.hero{background:linear-gradient(135deg,var(--rose-light) 0%,var(--blue-light) 100%);background-size:cover;background-position:center;width:100%;aspect-ratio:1920/380;position:relative;overflow:hidden;}
+.hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .5s ease;}
+.hero-slide.on{opacity:1;}
+.hero-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;display:none;width:46px;height:46px;border:none;border-radius:14px;background:#5170ff;color:#fff;font-size:1.7rem;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.28);opacity:.92;transition:opacity .2s,transform .2s;line-height:1;padding:0 0 4px;}
+.hero-arrow:hover{opacity:1;transform:translateY(-50%) scale(1.08);}
+.hero-arrow.left{left:14px;}
+.hero-arrow.right{right:14px;}
+.hero.multi .hero-arrow{display:flex;}
+.hero-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:5;display:none;gap:7px;}
+.hero.multi .hero-dots{display:flex;}
+.hero-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 4px rgba(0,0,0,.25);transition:background .2s;}
+.hero-dot.on{background:#fff;}
 .hero h1{font-family:'Slackside One',cursive;font-size:clamp(2rem,5vw,3.6rem);line-height:1.15;color:#ffffff;margin-bottom:12px;text-shadow:0 2px 12px rgba(0,0,0,.25);}
 .hero p{color:#ffffff;font-size:1rem;max-width:480px;margin:0 auto 24px;font-weight:400;text-shadow:0 1px 8px rgba(0,0,0,.3);}
 .hero-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
@@ -150,6 +161,9 @@ footer strong{color:var(--rose);}
 @media(max-width:640px){
   .cat-tabs-header{display:none;}
   .hero{aspect-ratio:1920/600;border-radius:0;}
+  .hero-arrow{width:34px;height:34px;font-size:1.25rem;border-radius:10px;}
+  .hero-arrow.left{left:8px;}
+  .hero-arrow.right{right:8px;}
   .header-inner{padding:8px 10px;gap:6px;flex-wrap:nowrap;}
   .logo-txt{font-size:1.6rem;}
   .nav-link{font-size:.82rem;gap:5px;padding:5px 2px;}
@@ -224,7 +238,13 @@ footer strong{color:var(--rose);}
   </div>
 </header>
 
-<section class="hero" id="heroSection"></section>
+<section class="hero" id="heroSection">
+  <div class="hero-slide" id="heroSlideA"></div>
+  <div class="hero-slide" id="heroSlideB"></div>
+  <button class="hero-arrow left" onclick="heroNav(-1)" aria-label="Banner anterior">‹</button>
+  <button class="hero-arrow right" onclick="heroNav(1)" aria-label="Banner siguiente">›</button>
+  <div class="hero-dots" id="heroDots"></div>
+</section>
 
 <div class="section-cats">
   <div class="cat-row" id="catRow"></div>
@@ -605,21 +625,48 @@ function showToast(msg){
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ══════════ CARGAR HERO (BANNER) DESDE SUPABASE ══════════
+// ══════════ CARGAR BANNERS (HERO) DESDE SUPABASE ══════════
+let HEROES = [], heroIdx = 0, heroSlideActiva = 'A';
+
 async function loadHero(){
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=valor&clave=eq.hero_imagen`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=clave,valor&clave=in.(hero_imagen,hero_imagenes)`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
     if(!res.ok) return;
     const data = await res.json();
-    const url = data[0]?.valor;
-    if(url && url.trim()){
-      const hero = document.getElementById('heroSection');
-      hero.style.backgroundImage = `url('${url}')`;
-      hero.style.backgroundColor = '#f45e94';
-    }
+    const multi = data.find(r => r.clave === 'hero_imagenes');
+    const single = data.find(r => r.clave === 'hero_imagen');
+    try { HEROES = multi?.valor ? JSON.parse(multi.valor) : []; } catch(e){ HEROES = []; }
+    if(!HEROES.length && single?.valor && single.valor.trim()) HEROES = [single.valor.trim()];
+    if(!HEROES.length) return;
+    // Precarga las imágenes para que el cambio sea instantáneo
+    HEROES.forEach(u => { const im = new Image(); im.src = u; });
+    const hero = document.getElementById('heroSection');
+    hero.style.backgroundColor = '#f45e94';
+    if(HEROES.length > 1) hero.classList.add('multi');
+    const a = document.getElementById('heroSlideA');
+    a.style.backgroundImage = `url('${HEROES[0]}')`;
+    a.classList.add('on');
+    renderHeroDots();
   } catch(err){ console.log('Hero:', err); }
+}
+
+function renderHeroDots(){
+  document.getElementById('heroDots').innerHTML = HEROES.map((u, i) =>
+    `<div class="hero-dot ${i === heroIdx ? 'on' : ''}"></div>`).join('');
+}
+
+function heroNav(dir){
+  if(HEROES.length < 2) return;
+  heroIdx = (heroIdx + dir + HEROES.length) % HEROES.length;
+  const entra = document.getElementById(heroSlideActiva === 'A' ? 'heroSlideB' : 'heroSlideA');
+  const sale = document.getElementById(heroSlideActiva === 'A' ? 'heroSlideA' : 'heroSlideB');
+  entra.style.backgroundImage = `url('${HEROES[heroIdx]}')`;
+  entra.classList.add('on');
+  sale.classList.remove('on');
+  heroSlideActiva = heroSlideActiva === 'A' ? 'B' : 'A';
+  renderHeroDots();
 }
 
 // ¡Arrancamos!
