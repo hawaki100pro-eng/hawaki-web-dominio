@@ -365,7 +365,8 @@ async function loadProducts(){
       price: parseFloat(p.precio),
       badge: p.badge,
       features: p.caracteristicas || [],
-      colors: (p.colores || []).map(c => ({ name: c.nombre, img: c.img, hex: c.hex }))
+      colors: (p.colores || []).map(c => ({ name: c.nombre, img: c.img, hex: c.hex })),
+      sizes: (Array.isArray(p.tallas) && p.tallas.length) ? p.tallas.slice().sort((a, b) => a - b) : SIZES
     }));
     renderProducts();
   } catch(err){
@@ -451,7 +452,7 @@ function renderMColors(){
 }
 
 function renderMSizes(){
-  document.getElementById('pm-sizes').innerHTML = SIZES.map(s => `<button class="pm-size-btn ${s===selSize?'selected':''}" onclick="selSz(${s})">${s}</button>`).join('');
+  document.getElementById('pm-sizes').innerHTML = curP.sizes.map(s => `<button class="pm-size-btn ${s===selSize?'selected':''}" onclick="selSz(${s})">${s}</button>`).join('');
 }
 
 function selCol(i){ selColor = i; renderMColors(); updateMainImg(); }

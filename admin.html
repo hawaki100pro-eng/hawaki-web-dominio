@@ -52,6 +52,12 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 .mini-red{background:#fee2e2;color:var(--red);}
 .upload-status{font-size:.72rem;color:var(--green);font-weight:600;}
 
+/* Sizes editor */
+.size-toggle{display:flex;gap:8px;flex-wrap:wrap;}
+.size-chip{border:2px solid var(--blue-light);background:var(--white);border-radius:10px;width:46px;height:42px;display:flex;align-items:center;justify-content:center;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--text-muted);user-select:none;}
+.size-chip:hover{border-color:var(--rose);color:var(--rose);}
+.size-chip.on{background:var(--rose);border-color:var(--rose);color:var(--white);}
+
 /* Product list */
 .plist{display:flex;flex-direction:column;gap:12px;}
 .pitem{background:var(--white);border-radius:16px;padding:14px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 2px 12px rgba(59,111,160,.08);flex-wrap:wrap;}
@@ -165,6 +171,11 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
         <textarea id="fCaract" rows="3" placeholder="Plantilla anatómica&#10;Suela antideslizante&#10;Materiales premium"></textarea>
       </div>
       <div class="full">
+        <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Tallas disponibles</label>
+        <div class="size-toggle" id="sizesEditor"></div>
+        <div style="font-size:.72rem;color:var(--text-muted);margin-top:8px;">Toca las tallas que tienes en stock — solo esas se mostrarán en la tienda.</div>
+      </div>
+      <div class="full">
         <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Colores y fotos</label>
         <div id="colorsEditor"></div>
         <button class="mini-btn mini-rose" onclick="addColorRow()">+ Agregar color</button>
@@ -194,10 +205,14 @@ const CATEGORIAS = {
   ortopedicas: 'Ortopédicas Comfort Altas'
 };
 
+const TALLAS_OPCIONES = [34,35,36,37,38,39,40,41,42];
+const TALLAS_DEFAULT = [35,36,37,38,39,40];
+
 let session = null;
 let products = [];
 let editingId = null;
 let colorRows = []; // {nombre, img, hex}
+let selectedSizes = [...TALLAS_DEFAULT];
 
 // ══════════ AUTH ══════════
 async function doLogin(){
@@ -456,6 +471,20 @@ function renderColorRows(){
   `).join('');
 }
 
+// ══════════ EDITOR DE TALLAS ══════════
+function toggleSize(s){
+  const i = selectedSizes.indexOf(s);
+  if(i >= 0) selectedSizes.splice(i, 1);
+  else selectedSizes.push(s);
+  renderSizesEditor();
+}
+
+function renderSizesEditor(){
+  document.getElementById('sizesEditor').innerHTML = TALLAS_OPCIONES.map(s =>
+    `<div class="size-chip ${selectedSizes.includes(s) ? 'on' : ''}" onclick="toggleSize(${s})">${s}</div>`
+  ).join('');
+}
+
 // ══════════ GUARDAR PRODUCTO ══════════
 async function saveProduct(){
   const nombre = document.getElementById('fNombre').value.trim();
@@ -473,7 +502,11 @@ async function saveProduct(){
     showToast('⚠️ Agrega al menos un color con nombre');
     return;
   }
-  
+  if(selectedSizes.length === 0){
+    showToast('⚠️ Selecciona al menos una talla disponible');
+    return;
+  }
+
   const colores = colorRows
     .filter(c => c.nombre.trim())
     .map(c => ({ nombre: c.nombre.trim(), img: c.img || null, hex: c.hex || null }));
@@ -483,7 +516,8 @@ async function saveProduct(){
     precio: precio.toFixed(2),
     badge,
     caracteristicas: caract,
-    colores
+    colores,
+    tallas: [...selectedSizes].sort((a, b) => a - b)
   };
   
   document.getElementById('saveBtn').disabled = true;
@@ -508,7 +542,11 @@ async function saveProduct(){
     resetForm();
     loadProducts();
   } catch(err){
-    showToast('❌ ' + err.message);
+    if(err.message.includes('tallas')){
+      showToast('❌ Falta crear la columna "tallas" en Supabase (avisa al desarrollador)');
+    } else {
+      showToast('❌ ' + err.message);
+    }
   } finally {
     document.getElementById('saveBtn').disabled = false;
     document.getElementById('saveBtn').textContent = '💾 Guardar Producto';
@@ -527,6 +565,8 @@ function resetForm(){
   document.getElementById('fCaract').value = '';
   colorRows = [];
   addColorRow();
+  selectedSizes = [...TALLAS_DEFAULT];
+  renderSizesEditor();
 }
 
 // ══════════ LISTA DE PRODUCTOS ══════════
@@ -556,7 +596,7 @@ function renderList(){
         ${img ? `<img src="${img.img}" alt="">` : `<div class="noimg">👡</div>`}
         <div class="pitem-info">
           <div class="pitem-name">${p.nombre} ${p.activo ? '' : '(oculto)'}</div>
-          <div class="pitem-meta">${p.modelo} · ${CATEGORIAS[p.categoria] || p.categoria} · ${(p.colores||[]).length} color(es)</div>
+          <div class="pitem-meta">${p.modelo} · ${CATEGORIAS[p.categoria] || p.categoria} · ${(p.colores||[]).length} color(es) · Tallas: ${(Array.isArray(p.tallas) && p.tallas.length) ? p.tallas.join(', ') : '35–40 (por defecto)'}</div>
         </div>
         <div class="pitem-price">$${parseFloat(p.precio).toFixed(2)}</div>
         <div class="pitem-actions">
@@ -583,6 +623,8 @@ function editProduct(id){
   colorRows = (p.colores || []).map(c => ({ nombre: c.nombre, img: c.img, hex: c.hex }));
   if(!colorRows.length) addColorRow();
   renderColorRows();
+  selectedSizes = (Array.isArray(p.tallas) && p.tallas.length) ? [...p.tallas] : [...TALLAS_DEFAULT];
+  renderSizesEditor();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
