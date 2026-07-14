@@ -65,7 +65,14 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .product-card:hover .card-img-wrap img{transform:scale(1.04);}
 .product-badge{position:absolute;top:10px;left:10px;background:var(--rose);color:var(--white);font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.5px;}
 .color-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;}
-.color-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--white);box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.color-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--white);box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .15s;}
+.color-dot.active{transform:scale(1.35);}
+.card-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:28px;height:28px;border:none;border-radius:50%;background:rgba(255,255,255,.88);color:var(--text);font-size:1.05rem;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.18);opacity:0;transition:opacity .2s,background .2s;display:flex;line-height:1;padding:0 0 2px;}
+.card-img-wrap:hover .card-arrow{opacity:1;}
+.card-arrow:hover{background:var(--white);}
+.card-arrow.left{left:8px;}
+.card-arrow.right{right:8px;}
+@media(hover:none){.card-arrow{opacity:1;background:rgba(255,255,255,.75);}}
 .card-info{padding:14px 16px;}
 .card-model{font-size:.7rem;color:var(--rose);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
 .card-name{font-weight:600;font-size:.95rem;margin-bottom:8px;}
@@ -445,17 +452,28 @@ function renderProducts(){
   }).join('');
 }
 
+let cardImgIdx = {}; // id de producto -> índice de foto actual en la tarjeta
+
 function cardHTML(p){
-  const mainImg = p.colors.find(c => c.img);
-  const dots = p.colors.map(c => `<div class="color-dot" style="background:${c.img ? '#888' : (c.hex || '#ccc')};"></div>`).join('');
+  const withImg = p.colors.filter(c => c.img);
+  const startIdx = cardImgIdx[p.id] || 0;
+  const mainImg = withImg[startIdx] || withImg[0];
+  const dots = p.colors.map((c, i) => {
+    const on = c.img && withImg.indexOf(c) === startIdx;
+    return `<div class="color-dot ${on ? 'active' : ''}" style="background:${c.img ? '#888' : (c.hex || '#ccc')};"></div>`;
+  }).join('');
   return `
     <div class="product-card" onclick="openModal(${p.id})">
       <div class="card-img-wrap">
         ${mainImg
-          ? `<img src="${mainImg.img}" alt="${p.name}" loading="lazy">`
+          ? `<img id="card-img-${p.id}" src="${mainImg.img}" alt="${p.name}" loading="lazy">`
           : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:5rem;background:linear-gradient(135deg,var(--rose-light),var(--blue-light))">👡</div>`}
+        ${withImg.length > 1 ? `
+          <button class="card-arrow left" onclick="cardNav(event,${p.id},-1)" aria-label="Foto anterior">‹</button>
+          <button class="card-arrow right" onclick="cardNav(event,${p.id},1)" aria-label="Foto siguiente">›</button>
+        ` : ''}
         ${p.badge ? `<span class="product-badge" style="background:${TAG_COLORS[p.badge] || 'var(--rose)'};">${p.badge}</span>` : ''}
-        <div class="color-dots">${dots}</div>
+        <div class="color-dots" id="card-dots-${p.id}">${dots}</div>
       </div>
       <div class="card-info">
         <div class="card-model">${p.model}</div>
@@ -464,6 +482,22 @@ function cardHTML(p){
         <button class="card-cta" onclick="event.stopPropagation();openModal(${p.id})">Ver opciones →</button>
       </div>
     </div>`;
+}
+
+function cardNav(e, id, dir){
+  e.stopPropagation();
+  const p = PRODUCTS.find(x => x.id === id);
+  const withImg = p.colors.filter(c => c.img);
+  if(withImg.length < 2) return;
+  const cur = cardImgIdx[id] || 0;
+  const next = (cur + dir + withImg.length) % withImg.length;
+  cardImgIdx[id] = next;
+  document.getElementById(`card-img-${id}`).src = withImg[next].img;
+  const dotsEl = document.getElementById(`card-dots-${id}`);
+  [...dotsEl.children].forEach((dot, i) => {
+    const c = p.colors[i];
+    dot.classList.toggle('active', !!c.img && withImg.indexOf(c) === next);
+  });
 }
 
 // ══════════ MODAL DE PRODUCTO ══════════
