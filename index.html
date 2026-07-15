@@ -322,7 +322,7 @@ footer strong{color:var(--rose);}
     </div>
     <div class="modal-body">
       <div class="order-summary" id="orderSummary"></div>
-      <div class="field"><label>Tu nombre completo</label><input type="text" id="custName" placeholder="Ej: Carolina Mendoza"></div>
+      <div class="field"><label>Tu nombre</label><input type="text" id="custName" placeholder="Ej: Carolina"></div>
       <div class="field"><label>Ciudad</label><input type="text" id="custCity" placeholder="Ej: Guayaquil"></div>
       <div class="field"><label>Dirección de entrega</label><input type="text" id="custAddress" placeholder="Ej: Cdla. Kennedy, Av. del Ejército 321"></div>
       <div class="modal-actions">
@@ -613,7 +613,8 @@ function openCheckout(){
   document.getElementById('orderSummary').innerHTML = `
     <h4>📋 Resumen de pedido</h4>
     ${cart.map(i => `<div class="order-line"><span>${i.name} ${i.color} T${i.size} ×${i.qty}</span><span>$${(i.price*i.qty).toFixed(2)}</span></div>`).join('')}
-    <div class="order-line" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:8px;"><strong>Total</strong><strong>$${total.toFixed(2)}</strong></div>`;
+    <div class="order-line" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:8px;"><strong>Total</strong><strong>$${total.toFixed(2)}</strong></div>
+    <div style="margin-top:10px;font-size:.78rem;color:var(--rose-dark);background:var(--rose-light);border-radius:10px;padding:8px 12px;text-align:center;">💕 Envíos por Servientrega a cargo del comprador 📦✨</div>`;
   document.getElementById('checkoutModal').classList.add('open');
 }
 function closeCheckout(){ document.getElementById('checkoutModal').classList.remove('open'); }
