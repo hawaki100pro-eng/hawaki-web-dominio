@@ -137,6 +137,8 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .ci-detail{font-size:.78rem;color:var(--text-muted);margin-bottom:5px;}
 .ci-price{font-weight:700;color:var(--blue);font-size:.92rem;}
 .ci-remove{background:none;border:none;cursor:pointer;color:var(--rose);font-size:1rem;padding:2px;}
+.cart-more-btn{width:100%;margin-top:16px;background:var(--blue-light);color:var(--blue);border:none;border-radius:12px;padding:12px;font-family:'Poppins',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.cart-more-btn:hover{opacity:.85;}
 .cart-footer{padding:16px 22px;border-top:1.5px solid var(--rose-light);}
 .cart-total{display:flex;justify-content:space-between;font-weight:700;font-size:1.05rem;margin-bottom:14px;}
 .checkout-btn{width:100%;background:linear-gradient(90deg,var(--rose),var(--blue));color:var(--white);border:none;border-radius:14px;padding:14px;font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
@@ -590,7 +592,14 @@ function updateCartUI(){
       <div class="ci-img">${item.img ? `<img src="${item.img}" alt="${item.name}">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2rem;background:var(--rose-light);">👡</div>`}</div>
       <div class="ci-info"><div class="ci-name">${item.name}</div><div class="ci-detail">Color: ${item.color} · Talla: ${item.size} · ×${item.qty}</div><div class="ci-price">$${(item.price*item.qty).toFixed(2)}</div></div>
       <button class="ci-remove" onclick="removeItem('${item.key}')">✕</button>
-    </div>`).join('');
+    </div>`).join('') +
+    `<button class="cart-more-btn" onclick="quieroMas()">¡Quiero algo más! 🛍️</button>`;
+}
+
+function quieroMas(){
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  document.querySelector('.section-cats').scrollIntoView({ behavior: 'smooth' });
 }
 
 function removeItem(key){ cart = cart.filter(i => i.key !== key); updateCartUI(); }
