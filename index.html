@@ -140,7 +140,8 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .cart-more-btn{width:100%;margin-top:16px;background:var(--blue-light);color:var(--blue);border:none;border-radius:12px;padding:12px;font-family:'Poppins',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
 .cart-more-btn:hover{opacity:.85;}
 .cart-footer{padding:16px 22px;border-top:1.5px solid var(--rose-light);}
-.cart-total{display:flex;justify-content:space-between;font-weight:700;font-size:1.05rem;margin-bottom:14px;}
+.cart-line{display:flex;justify-content:space-between;font-size:.88rem;color:var(--text-muted);margin-bottom:6px;}
+.cart-total{display:flex;justify-content:space-between;font-weight:700;font-size:1.05rem;margin-bottom:14px;border-top:1.5px solid var(--rose-light);padding-top:8px;}
 .checkout-btn{width:100%;background:linear-gradient(90deg,var(--rose),var(--blue));color:var(--white);border:none;border-radius:14px;padding:14px;font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s;}
 .checkout-btn:hover{opacity:.9;}
 /* CHECKOUT MODAL */
@@ -148,7 +149,7 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .modal.open{display:flex;}
 .modal-box{background:var(--white);border-radius:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(59,111,160,.2);overflow:hidden;}
 .modal-top{background:linear-gradient(90deg,var(--rose-light),var(--blue-light));padding:24px 28px 20px;}
-.modal-top h2{font-family:'Playfair Display',serif;font-size:1.5rem;margin-bottom:4px;}
+.modal-top h2{font-family:'Poppins',sans-serif;font-weight:600;font-size:1.3rem;margin-bottom:4px;}
 .modal-top p{font-size:.85rem;color:var(--text-muted);}
 .modal-body{padding:24px 28px;}
 .order-summary{background:var(--cream);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:.85rem;}
@@ -315,6 +316,8 @@ footer strong{color:var(--rose);}
     <div class="cart-empty"><span>🛍️</span>Tu carrito está vacío.<br>Agrega tus sandalias favoritas.</div>
   </div>
   <div class="cart-footer">
+    <div class="cart-line"><span>Subtotal:</span><span id="cartSubtotal">$0.00</span></div>
+    <div class="cart-line"><span>IVA (15%):</span><span id="cartIva">$0.00</span></div>
     <div class="cart-total"><span>Total:</span><span id="cartTotal">$0.00</span></div>
     <button class="checkout-btn" onclick="openCheckout()">Completar mi compra 💗</button>
   </div>
@@ -598,8 +601,11 @@ function closePModalBg(e){ if(e.target === document.getElementById('pmodalOverla
 function updateCartUI(){
   const count = cart.reduce((a,i) => a + i.qty, 0);
   document.getElementById('cartCount').textContent = count;
-  const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
-  document.getElementById('cartTotal').textContent = '$' + total.toFixed(2);
+  const subtotal = cart.reduce((a,i) => a + i.price * i.qty, 0);
+  const iva = subtotal * 0.15;
+  document.getElementById('cartSubtotal').textContent = '$' + subtotal.toFixed(2);
+  document.getElementById('cartIva').textContent = '$' + iva.toFixed(2);
+  document.getElementById('cartTotal').textContent = '$' + (subtotal + iva).toFixed(2);
   const el = document.getElementById('cartItems');
   if(!cart.length){
     el.innerHTML = '<div class="cart-empty"><span>🛍️</span>Tu carrito está vacío.<br>Agrega tus sandalias favoritas.</div>';
@@ -627,11 +633,14 @@ function openCartDrawer(){ document.getElementById('cartDrawer').classList.add('
 // ══════════ CHECKOUT ══════════
 function openCheckout(){
   if(!cart.length){ showToast('Tu carrito está vacío 🛍️'); return; }
-  const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
+  const subtotal = cart.reduce((a,i) => a + i.price * i.qty, 0);
+  const iva = subtotal * 0.15;
   document.getElementById('orderSummary').innerHTML = `
     <h4>📋 Resumen de pedido</h4>
     ${cart.map(i => `<div class="order-line"><span>${i.name} ${i.color} T${i.size} ×${i.qty}</span><span>$${(i.price*i.qty).toFixed(2)}</span></div>`).join('')}
-    <div class="order-line" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:8px;"><strong>Total</strong><strong>$${total.toFixed(2)}</strong></div>
+    <div class="order-line" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:8px;"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+    <div class="order-line"><span>IVA (15%)</span><span>$${iva.toFixed(2)}</span></div>
+    <div class="order-line"><strong>Total</strong><strong>$${(subtotal+iva).toFixed(2)}</strong></div>
     <div style="margin-top:10px;font-size:.78rem;color:var(--rose-dark);background:var(--rose-light);border-radius:10px;padding:8px 12px;text-align:center;">💕 Envíos por Servientrega a cargo del comprador 📦✨</div>`;
   document.getElementById('checkoutModal').classList.add('open');
 }
@@ -643,8 +652,9 @@ function sendWA(){
   const addr = document.getElementById('custAddress').value.trim();
   if(!name || !city || !addr){ showToast('Por favor completa todos tus datos 📝'); return; }
   const lines = cart.map(i => `• Modelo ${i.model} color ${i.color}, Talla ${i.size} x${i.qty}`).join('\n');
-  const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
-  const msg = `¡Hola! Soy ${name} y quisiera adquirir:\n\n${lines}\n\nTotal: $${total.toFixed(2)}\nCon envío a ${city}\nDirección: ${addr}\n\n¡Quedo atenta a su confirmación! 💗`;
+  const subtotal = cart.reduce((a,i) => a + i.price * i.qty, 0);
+  const iva = subtotal * 0.15;
+  const msg = `¡Hola! Soy ${name} y quisiera adquirir:\n\n${lines}\n\nSubtotal: $${subtotal.toFixed(2)}\nIVA (15%): $${iva.toFixed(2)}\nTotal: $${(subtotal+iva).toFixed(2)}\nCon envío a ${city}\nDirección: ${addr}\n\n¡Quedo atenta a su confirmación! 💗`;
   window.open(`https://wa.me/593990788739?text=${encodeURIComponent(msg)}`, '_blank');
   closeCheckout();
 }
