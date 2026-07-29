@@ -334,28 +334,62 @@ async function loadHero(){
     heroImgs = multi?.valor ? JSON.parse(multi.valor) : [];
     // Migración: si aún no hay lista pero existe el banner antiguo, úsalo
     if(!heroImgs.length && single?.valor && single.valor.trim()) heroImgs = [single.valor.trim()];
+    heroImgs = heroImgs.map(normalizaBanner);
   } catch(err){ console.log('loadHero', err); }
   renderHeroList();
 }
+
+// Un banner puede estar guardado como texto simple (formato antiguo, sin producto)
+// o como {img, prod} (enlazado a un producto). Aceptamos los dos.
+function normalizaBanner(b){
+  if(typeof b === 'string') return { img: b, prod: null };
+  return { img: b.img, prod: b.prod ?? null };
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 function renderHeroList(){
   const el = document.getElementById('heroList');
   if(!heroImgs.length){
     el.innerHTML = '<p style="font-size:.82rem;color:var(--text-muted);margin-bottom:14px;">No hay banners. La tienda muestra el fondo de color rosa/azul.</p>';
   } else {
-    el.innerHTML = heroImgs.map((u, i) => `
+    el.innerHTML = heroImgs.map((b, i) => `
       <div style="margin-bottom:16px;">
         <div style="font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Banner ${i+1}</div>
-        <img src="${u}" alt="Banner ${i+1}" style="width:100%;border-radius:12px;border:1px solid var(--blue-light);display:block;">
-        <button class="mini-btn mini-red" style="margin-top:8px;" onclick="removeHero(${i})">🗑 Quitar banner ${i+1}</button>
+        <img src="${b.img}" alt="Banner ${i+1}" style="width:100%;border-radius:12px;border:1px solid var(--blue-light);display:block;">
+        <div style="margin-top:10px;">
+          <label style="font-size:.75rem;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px;">Al tocarlo, abre este producto:</label>
+          <select onchange="setHeroProd(${i}, this.value)" style="width:100%;padding:9px 10px;border:1.5px solid var(--blue-light);border-radius:10px;font-family:inherit;font-size:.85rem;background:#fff;">
+            <option value="">— Ninguno (el banner no hace nada) —</option>
+            ${products.map(p => `<option value="${p.id}" ${b.prod === p.id ? 'selected' : ''}>${esc(p.nombre)} · $${parseFloat(p.precio).toFixed(2)}</option>`).join('')}
+          </select>
+          ${products.length ? '' : '<div style="font-size:.72rem;color:var(--text-muted);margin-top:5px;">Cargando productos…</div>'}
+        </div>
+        <button class="mini-btn mini-red" style="margin-top:10px;" onclick="removeHero(${i})">🗑 Quitar banner ${i+1}</button>
       </div>`).join('');
   }
   document.getElementById('heroAddBtn').style.display = heroImgs.length >= 3 ? 'none' : 'inline-block';
   document.getElementById('heroCount').textContent = `${heroImgs.length} de 3 banners`;
 }
 
+async function setHeroProd(i, val){
+  const backup = heroImgs.map(b => ({ ...b }));
+  heroImgs[i].prod = val ? parseInt(val, 10) : null;
+  try {
+    await saveHeroList();
+    showToast(heroImgs[i].prod ? '🔗 Banner enlazado al producto' : '🔗 Enlace quitado del banner');
+  } catch(err){
+    heroImgs = backup;
+    renderHeroList();
+    showToast('❌ ' + err.message);
+  }
+}
+
 function saveHeroList(){
-  return saveConfig('hero_imagenes', JSON.stringify(heroImgs));
+  // Si el banner no tiene producto lo guardamos como texto simple, así una
+  // versión antigua de la tienda (en caché) lo sigue entendiendo igual
+  const data = heroImgs.map(b => b.prod ? { img: b.img, prod: b.prod } : b.img);
+  return saveConfig('hero_imagenes', JSON.stringify(data));
 }
 
 async function uploadHero(file){
@@ -372,7 +406,7 @@ async function uploadHero(file){
       body: compressed
     });
     if(!up.ok){ const e = await up.json().catch(()=>({})); throw new Error(e.message || 'Error al subir'); }
-    heroImgs.push(`${SUPABASE_URL}/storage/v1/object/public/productos/${fileName}`);
+    heroImgs.push({ img: `${SUPABASE_URL}/storage/v1/object/public/productos/${fileName}`, prod: null });
     try {
       await saveHeroList();
     } catch(e){ heroImgs.pop(); throw e; }
@@ -857,6 +891,7 @@ async function loadProducts(){
     if(!res.ok) throw new Error('Error al cargar');
     products = await res.json();
     renderList();
+    if(heroImgs.length) renderHeroList();   // ahora sí puede llenar el desplegable de cada banner
   } catch(err){
     document.getElementById('plist').innerHTML = `<p style="text-align:center;color:var(--red);">Error al cargar productos. <button class="mini-btn mini-rose" onclick="loadProducts()">Reintentar</button></p>`;
   }

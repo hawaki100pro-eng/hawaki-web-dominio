@@ -44,6 +44,9 @@ header{background:#f45e94;position:sticky;top:0;z-index:100;box-shadow:0 2px 12p
 .hero-arrow.left{left:14px;}
 .hero-arrow.right{right:14px;}
 .hero.multi .hero-arrow{display:flex;}
+.hero.clicable{cursor:pointer;}
+.hero-cta{position:absolute;right:14px;bottom:12px;z-index:6;display:none;background:rgba(255,255,255,.94);color:var(--text);font-size:.75rem;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.22);pointer-events:none;}
+.hero.clicable .hero-cta{display:block;}
 .hero-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:5;display:none;gap:7px;}
 .hero.multi .hero-dots{display:flex;}
 .hero-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 4px rgba(0,0,0,.25);transition:background .2s;}
@@ -203,6 +206,7 @@ footer strong{color:var(--rose);}
   .cat-tabs-header{display:none;}
   .hero{aspect-ratio:1920/600;border-radius:0;}
   .hero-arrow{width:34px;height:34px;font-size:1.25rem;border-radius:10px;}
+  .hero-cta{right:8px;bottom:8px;font-size:.65rem;padding:5px 10px;}
   .hero-arrow.left{left:8px;}
   .hero-arrow.right{right:8px;}
   .header-inner{padding:8px 10px;gap:6px;flex-wrap:nowrap;}
@@ -294,12 +298,13 @@ footer strong{color:var(--rose);}
   </div>
 </header>
 
-<section class="hero" id="heroSection">
+<section class="hero" id="heroSection" onclick="heroClick(event)">
   <div class="hero-slide" id="heroSlideA"></div>
   <div class="hero-slide" id="heroSlideB"></div>
   <button class="hero-arrow left" onclick="heroNavManual(-1)" aria-label="Banner anterior">‹</button>
   <button class="hero-arrow right" onclick="heroNavManual(1)" aria-label="Banner siguiente">›</button>
   <div class="hero-dots" id="heroDots"></div>
+  <div class="hero-cta">Ver producto →</div>
 </section>
 
 <div class="section-cats">
@@ -815,22 +820,56 @@ async function loadHero(){
     try { HEROES = multi?.valor ? JSON.parse(multi.valor) : []; } catch(e){ HEROES = []; }
     if(!HEROES.length && single?.valor && single.valor.trim()) HEROES = [single.valor.trim()];
     if(!HEROES.length) return;
+    HEROES = HEROES.map(normalizaBanner);
     // Precarga las imágenes para que el cambio sea instantáneo
-    HEROES.forEach(u => { const im = new Image(); im.src = u; });
+    HEROES.forEach(b => { const im = new Image(); im.src = b.img; });
     const hero = document.getElementById('heroSection');
     hero.style.backgroundColor = '#f45e94';
     if(HEROES.length > 1) hero.classList.add('multi');
     const a = document.getElementById('heroSlideA');
-    a.style.backgroundImage = `url('${HEROES[0]}')`;
+    a.style.backgroundImage = `url('${HEROES[0].img}')`;
     a.classList.add('on');
     renderHeroDots();
+    marcaHeroClicable();
     heroAuto();
+    // Si el dedo o el mouse está sobre el banner, no lo cambiamos:
+    // evita que la clienta toque una sandalia y se le abra otra
+    hero.addEventListener('mouseenter', heroPausa);
+    hero.addEventListener('mouseleave', heroAuto);
+    hero.addEventListener('touchstart', heroPausa, { passive: true });
+    hero.addEventListener('touchend', heroAuto, { passive: true });
   } catch(err){ console.log('Hero:', err); }
 }
 
+// Un banner puede venir guardado de dos formas:
+//   "url-de-la-foto.webp"            → formato antiguo, sin producto enlazado
+//   {"img":"url...", "prod":12}      → formato nuevo, abre la ficha del producto 12
+// Aceptamos las dos para que los banners viejos nunca se rompan.
+function normalizaBanner(b){
+  if(typeof b === 'string') return { img: b, prod: null };
+  return { img: b.img, prod: b.prod ?? null };
+}
+
 function renderHeroDots(){
-  document.getElementById('heroDots').innerHTML = HEROES.map((u, i) =>
+  document.getElementById('heroDots').innerHTML = HEROES.map((b, i) =>
     `<div class="hero-dot ${i === heroIdx ? 'on' : ''}"></div>`).join('');
+}
+
+// ¿El banner que se ve ahora lleva a un producto? Si sí, mostramos el aviso
+// "Ver producto" y el cursor de mano.
+function marcaHeroClicable(){
+  const b = HEROES[heroIdx];
+  document.getElementById('heroSection').classList.toggle('clicable', !!(b && b.prod));
+}
+
+function heroPausa(){ clearInterval(heroTimer); }
+
+function heroClick(e){
+  if(e.target.closest('.hero-arrow')) return;      // las flechas ya tienen su propia función
+  const b = HEROES[heroIdx];
+  if(!b || !b.prod) return;                        // banner sin producto: no hace nada
+  if(!PRODUCTS.some(p => p.id === b.prod)) return; // aún no cargan, o el producto ya no existe
+  openModal(b.prod);
 }
 
 // Arranca (o reinicia) el cambio automático de banner
@@ -854,11 +893,12 @@ function heroNav(dir){
   heroIdx = (heroIdx + dir + HEROES.length) % HEROES.length;
   const entra = document.getElementById(heroSlideActiva === 'A' ? 'heroSlideB' : 'heroSlideA');
   const sale = document.getElementById(heroSlideActiva === 'A' ? 'heroSlideA' : 'heroSlideB');
-  entra.style.backgroundImage = `url('${HEROES[heroIdx]}')`;
+  entra.style.backgroundImage = `url('${HEROES[heroIdx].img}')`;
   entra.classList.add('on');
   sale.classList.remove('on');
   heroSlideActiva = heroSlideActiva === 'A' ? 'B' : 'A';
   renderHeroDots();
+  marcaHeroClicable();
 }
 
 // ¡Arrancamos!
