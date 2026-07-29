@@ -297,8 +297,8 @@ footer strong{color:var(--rose);}
 <section class="hero" id="heroSection">
   <div class="hero-slide" id="heroSlideA"></div>
   <div class="hero-slide" id="heroSlideB"></div>
-  <button class="hero-arrow left" onclick="heroNav(-1)" aria-label="Banner anterior">‹</button>
-  <button class="hero-arrow right" onclick="heroNav(1)" aria-label="Banner siguiente">›</button>
+  <button class="hero-arrow left" onclick="heroNavManual(-1)" aria-label="Banner anterior">‹</button>
+  <button class="hero-arrow right" onclick="heroNavManual(1)" aria-label="Banner siguiente">›</button>
   <div class="hero-dots" id="heroDots"></div>
 </section>
 
@@ -800,6 +800,8 @@ function showToast(msg){
 
 // ══════════ CARGAR BANNERS (HERO) DESDE SUPABASE ══════════
 let HEROES = [], heroIdx = 0, heroSlideActiva = 'A';
+const HERO_INTERVALO = 4000;   // milisegundos que dura cada banner en pantalla
+let heroTimer = null;
 
 async function loadHero(){
   try {
@@ -822,6 +824,7 @@ async function loadHero(){
     a.style.backgroundImage = `url('${HEROES[0]}')`;
     a.classList.add('on');
     renderHeroDots();
+    heroAuto();
   } catch(err){ console.log('Hero:', err); }
 }
 
@@ -829,6 +832,22 @@ function renderHeroDots(){
   document.getElementById('heroDots').innerHTML = HEROES.map((u, i) =>
     `<div class="hero-dot ${i === heroIdx ? 'on' : ''}"></div>`).join('');
 }
+
+// Arranca (o reinicia) el cambio automático de banner
+function heroAuto(){
+  clearInterval(heroTimer);
+  if(HEROES.length < 2) return;
+  heroTimer = setInterval(() => heroNav(1), HERO_INTERVALO);
+}
+
+// Cuando la clienta usa las flechas, reiniciamos el conteo para que
+// no le salte el banner justo después de tocarlo
+function heroNavManual(dir){ heroNav(dir); heroAuto(); }
+
+// Si se va a otra pestaña, pausamos: no gastamos datos ni batería de balde
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) clearInterval(heroTimer); else heroAuto();
+});
 
 function heroNav(dir){
   if(HEROES.length < 2) return;
