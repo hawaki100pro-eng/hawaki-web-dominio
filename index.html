@@ -28,7 +28,7 @@
 :root{color-scheme:light;--rose:#E8607A;--rose-light:#F9D6DD;--rose-dark:#C2415A;--blue:#3B6FA0;--blue-light:#D0E4F7;--cream:#FFF8F9;--text:#1a1a2e;--text-muted:#6b7280;--white:#ffffff;--shadow:0 4px 24px rgba(59,111,160,.10);--shadow-h:0 8px 32px rgba(232,96,122,.20);
 /* Tokens de superficie: --white se queda como color de marca (texto sobre
    degradados rosa), por eso los FONDOS usan --surface y no --white. */
---surface:#ffffff;--surface-2:#ffffff;--border:transparent;--header-bg:#f45e94;--photo-bed:#f5f5f5;--velo:rgba(26,26,46,.58);--sombra-menu:0 8px 32px rgba(59,111,160,.18);--footer-bg:#1a1a2e;--rose-grad-end:#C2415A;--blue-text:#3B6FA0;--foto-brillo:1;--cta-bg:rgba(255,255,255,.94);--arrow-bg:rgba(255,255,255,.88);--arrow-bg-movil:rgba(255,255,255,.6);--fade-from:rgba(255,248,249,0);--btn-off-bg:#d1d5db;--btn-off-text:#ffffff;--chip-border:#ddd;--chip-text:#999;--input-bg:#ffffff;}
+--surface:#ffffff;--surface-2:#ffffff;--border:transparent;--header-bg:#f45e94;--photo-bed:#f5f5f5;--velo:rgba(26,26,46,.58);--sombra-menu:0 8px 32px rgba(59,111,160,.18);--footer-bg:#1a1a2e;--rose-grad-end:#C2415A;--blue-text:#3B6FA0;--foto-brillo:1;--cta-bg:rgba(255,255,255,.94);--arrow-bg:rgba(255,255,255,.88);--arrow-bg-movil:rgba(255,255,255,.6);--fade-from:rgba(255,248,249,0);--btn-off-bg:#d1d5db;--btn-off-text:#ffffff;--chip-border:#ddd;--chip-text:#999;--input-bg:#ffffff;--border-linea:#e5e7eb;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);}
 header{background:var(--header-bg);position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(59,111,160,.08);}
@@ -295,7 +295,7 @@ footer strong{color:var(--rose);}
   --rose-light:#3A2029;--rose-dark:#F0A0AE;--blue-light:#24374F;
   --shadow:0 4px 24px rgba(0,0,0,.5);--shadow-h:0 8px 32px rgba(0,0,0,.62);
   --sombra-menu:0 12px 34px rgba(0,0,0,.55);
-  --footer-bg:#0E0A10;--rose-grad-end:#8E3358;--blue-text:#9CC4EA;--foto-brillo:.9;--cta-bg:rgba(26,20,24,.88);--arrow-bg:rgba(44,36,48,.92);--arrow-bg-movil:rgba(44,36,48,.8);--fade-from:rgba(23,18,25,0);--btn-off-bg:#3A3340;--btn-off-text:#A99FA6;--chip-border:rgba(255,255,255,.2);--chip-text:#B3A3AC;--input-bg:#2C2430;
+  --footer-bg:#0E0A10;--rose-grad-end:#8E3358;--blue-text:#9CC4EA;--foto-brillo:.9;--cta-bg:rgba(26,20,24,.88);--arrow-bg:rgba(44,36,48,.92);--arrow-bg-movil:rgba(44,36,48,.8);--fade-from:rgba(23,18,25,0);--btn-off-bg:#3A3340;--btn-off-text:#A99FA6;--chip-border:rgba(255,255,255,.2);--chip-text:#B3A3AC;--input-bg:#2C2430;--border-linea:rgba(255,255,255,.14);
 }
 .header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .theme-btn{background:transparent;color:var(--white);border:2px solid rgba(255,255,255,.9);border-radius:50%;width:46px;height:46px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;line-height:1;transition:all .2s;}
@@ -344,7 +344,7 @@ footer strong{color:var(--rose);}
   <button class="hero-arrow left" onclick="heroNavManual(-1)" aria-label="Banner anterior">‹</button>
   <button class="hero-arrow right" onclick="heroNavManual(1)" aria-label="Banner siguiente">›</button>
   <div class="hero-dots" id="heroDots"></div>
-  <div class="hero-cta">Clik aquí</div>
+  <div class="hero-cta">Click</div>
 </section>
 
 <div class="section-cats">
@@ -412,8 +412,6 @@ footer strong{color:var(--rose);}
     <div class="cart-empty"><span>🛍️</span>Tu carrito está vacío.<br>Agrega tus sandalias favoritas.</div>
   </div>
   <div class="cart-footer">
-    <div class="cart-line"><span>Subtotal:</span><span id="cartSubtotal">$0.00</span></div>
-    <div class="cart-line"><span>IVA (15%):</span><span id="cartIva">$0.00</span></div>
     <div class="cart-total"><span>Total:</span><span id="cartTotal">$0.00</span></div>
     <button class="checkout-btn" onclick="openCheckout()">Completar mi compra 💗</button>
   </div>
@@ -745,11 +743,8 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') closeGuide();
 function updateCartUI(){
   const count = cart.reduce((a,i) => a + i.qty, 0);
   document.getElementById('cartCount').textContent = count;
-  const subtotal = cart.reduce((a,i) => a + i.price * i.qty, 0);
-  const iva = subtotal * 0.15;
-  document.getElementById('cartSubtotal').textContent = '$' + subtotal.toFixed(2);
-  document.getElementById('cartIva').textContent = '$' + iva.toFixed(2);
-  document.getElementById('cartTotal').textContent = '$' + (subtotal + iva).toFixed(2);
+  const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
+  document.getElementById('cartTotal').textContent = '$' + total.toFixed(2);
   const el = document.getElementById('cartItems');
   if(!cart.length){
     el.innerHTML = '<div class="cart-empty"><span>🛍️</span>Tu carrito está vacío.<br>Agrega tus sandalias favoritas.</div>';
@@ -777,14 +772,11 @@ function openCartDrawer(){ document.getElementById('cartDrawer').classList.add('
 // ══════════ CHECKOUT ══════════
 function openCheckout(){
   if(!cart.length){ showToast('Tu carrito está vacío 🛍️'); return; }
-  const subtotal = cart.reduce((a,i) => a + i.price * i.qty, 0);
-  const iva = subtotal * 0.15;
+  const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
   document.getElementById('orderSummary').innerHTML = `
     <h4>📋 Resumen de pedido</h4>
     ${cart.map(i => `<div class="order-line"><span>${i.name} ${i.color} T${i.size} ×${i.qty}</span><span>$${(i.price*i.qty).toFixed(2)}</span></div>`).join('')}
-    <div class="order-line" style="border-top:1px solid #e5e7eb;margin-top:8px;padding-top:8px;"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
-    <div class="order-line"><span>IVA (15%)</span><span>$${iva.toFixed(2)}</span></div>
-    <div class="order-line"><strong>Total</strong><strong>$${(subtotal+iva).toFixed(2)}</strong></div>
+    <div class="order-line" style="border-top:1px solid var(--border-linea);margin-top:8px;padding-top:8px;"><strong>Total</strong><strong>$${total.toFixed(2)}</strong></div>
     <div style="margin-top:10px;font-size:.78rem;color:var(--rose-dark);background:var(--rose-light);border-radius:10px;padding:8px 12px;text-align:center;">💕 Envíos por Servientrega a cargo del comprador 📦✨</div>`;
   document.getElementById('checkoutModal').classList.add('open');
 }
@@ -796,9 +788,8 @@ function sendWA(){
   const addr = document.getElementById('custAddress').value.trim();
   if(!name || !city || !addr){ showToast('Por favor completa todos tus datos 📝'); return; }
   const lines = cart.map(i => `• Modelo ${i.model} color ${i.color}, Talla ${i.size} x${i.qty}`).join('\n');
-  const subtotal = cart.reduce((a,i) => a + i.price * i.qty, 0);
-  const iva = subtotal * 0.15;
-  const msg = `¡Hola! Soy ${name} y quisiera adquirir:\n\n${lines}\n\nSubtotal: $${subtotal.toFixed(2)}\nIVA (15%): $${iva.toFixed(2)}\nTotal: $${(subtotal+iva).toFixed(2)}\nCon envío a ${city}\nDirección: ${addr}\n\n¡Quedo atenta a su confirmación! 💗`;
+  const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
+  const msg = `¡Hola! Soy ${name} y quisiera adquirir:\n\n${lines}\n\nTotal: $${total.toFixed(2)}\nCon envío a ${city}\nDirección: ${addr}\n\n¡Quedo atenta a su confirmación! 💗`;
   window.open(`https://wa.me/593990788739?text=${encodeURIComponent(msg)}`, '_blank');
   closeCheckout();
 }
