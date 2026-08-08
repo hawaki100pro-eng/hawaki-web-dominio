@@ -7,12 +7,12 @@
 <meta name="description" content="Sandalias y zapatillas que salen del amor. Plataformas, sandalias, tacones, yute y más.">
 <meta name="theme-color" id="metaTheme" content="#f45e94">
 <script>
-// Se ejecuta ANTES de pintar la página: sin esto se vería un destello blanco
-// antes de que el modo noche se aplique.
+// Se ejecuta ANTES de pintar la página: si el visitante ya eligió modo noche,
+// sin esto vería un destello blanco antes de que se aplique.
 (function(){
   var t = null;
   try { t = localStorage.getItem('hawaki-tema'); } catch(e){}
-  if(!t) t = window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
+  if(t !== 'dark') t = 'light';   // por defecto siempre claro, sin importar la configuración del celular
   document.documentElement.setAttribute('data-theme', t);
   if(t === 'dark'){
     var m = document.querySelector('meta[name=theme-color]');
@@ -284,19 +284,9 @@ footer strong{color:var(--rose);}
   .category-label{font-size:1.05rem;}
 }
 /* ═══════════ MODO NOCHE ═══════════
-   Por defecto seguimos la configuración del celular. El botón manual escribe
-   data-theme en <html> y gana en los dos sentidos. Los valores van repetidos
-   a propósito: CSS no permite reutilizar un bloque de variables. */
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  color-scheme:dark;
-  --cream:#171219;--text:#F2E9EE;--text-muted:#B3A3AC;
-  --surface:#211A22;--surface-2:#2C2430;--border:rgba(255,255,255,.10);
-  --header-bg:#8E3358;--photo-bed:#EDE6EA;--velo:rgba(0,0,0,.72);
-  --rose-light:#3A2029;--rose-dark:#F0A0AE;--blue-light:#24374F;
-  --shadow:0 4px 24px rgba(0,0,0,.5);--shadow-h:0 8px 32px rgba(0,0,0,.62);
-  --sombra-menu:0 12px 34px rgba(0,0,0,.55);
-  --footer-bg:#0E0A10;--rose-grad-end:#8E3358;--blue-text:#9CC4EA;--foto-brillo:.9;--cta-bg:rgba(26,20,24,.88);--arrow-bg:rgba(44,36,48,.92);--arrow-bg-movil:rgba(44,36,48,.8);--fade-from:rgba(23,18,25,0);--btn-off-bg:#3A3340;--btn-off-text:#A99FA6;--chip-border:rgba(255,255,255,.2);--chip-text:#B3A3AC;--input-bg:#2C2430;
-}}
+   La página SIEMPRE abre en claro, aunque el celular esté en modo oscuro.
+   El modo noche es una elección del visitante: solo se aplica cuando el botón
+   escribe data-theme="dark" en <html>, y se recuerda para su próxima visita. */
 :root[data-theme="dark"]{
   color-scheme:dark;
   --cream:#171219;--text:#F2E9EE;--text-muted:#B3A3AC;
@@ -854,10 +844,15 @@ function showToast(msg){
 }
 
 // ══════════ MODO NOCHE ══════════
-// Sin elección guardada seguimos la configuración del celular; el botón la sobreescribe.
+// La página abre siempre en claro. El modo noche es opcional: lo activa el
+// visitante con el botón y se le recuerda para la próxima vez.
 function temaActual(){
-  return document.documentElement.getAttribute('data-theme')
-    || (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+  // La elección guardada manda. El atributo es solo el estado ya pintado, y el
+  // script del <head> podría no haber corrido: así el tema nunca se pierde.
+  let guardado = null;
+  try { guardado = localStorage.getItem('hawaki-tema'); } catch(e){}
+  if(guardado === 'dark' || guardado === 'light') return guardado;
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
 }
 function aplicarTema(t){
   document.documentElement.setAttribute('data-theme', t);
@@ -877,12 +872,6 @@ function toggleTheme(){
   aplicarTema(t);
 }
 aplicarTema(temaActual());
-// Si la clienta nunca eligió a mano, seguimos los cambios del sistema
-window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', e => {
-  let guardado = null;
-  try { guardado = localStorage.getItem('hawaki-tema'); } catch(err){}
-  if(!guardado) aplicarTema(e.matches ? 'dark' : 'light');
-});
 
 // ══════════ CARGAR BANNERS (HERO) DESDE SUPABASE ══════════
 let HEROES = [], heroIdx = 0, heroSlideActiva = 'A';
