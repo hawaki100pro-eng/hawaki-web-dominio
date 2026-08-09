@@ -7,11 +7,15 @@
 <meta name="description" content="Sandalias y zapatillas que salen del amor. Plataformas, sandalias, tacones, yute y más.">
 <meta name="theme-color" id="metaTheme" content="#f45e94">
 <script>
-// Se ejecuta ANTES de pintar la página: si el visitante ya eligió modo noche,
-// sin esto vería un destello blanco antes de que se aplique.
+// Se ejecuta ANTES de pintar la página: si el visitante eligió modo noche en
+// esta misma visita, sin esto vería un destello blanco antes de aplicarse.
 (function(){
   var t = null;
-  try { t = localStorage.getItem('hawaki-tema'); } catch(e){}
+  // sessionStorage y no localStorage: la elección dura solo la visita actual.
+  try { t = sessionStorage.getItem('hawaki-tema'); } catch(e){}
+  // Limpieza de la versión anterior, que guardaba la elección para siempre:
+  // sin esto, quien ya había elegido oscuro se quedaría en oscuro de por vida.
+  try { localStorage.removeItem('hawaki-tema'); } catch(e){}
   if(t !== 'dark') t = 'light';   // por defecto siempre claro, sin importar la configuración del celular
   document.documentElement.setAttribute('data-theme', t);
   if(t === 'dark'){
@@ -885,14 +889,14 @@ function showToast(msg){
 }
 
 // ══════════ MODO NOCHE ══════════
-// La página abre siempre en claro. El modo noche es opcional: lo activa el
-// visitante con el botón y se le recuerda para la próxima vez.
+// La página abre siempre en claro. El modo noche dura solo la visita actual:
+// al cerrar la pestaña se olvida y la próxima vez vuelve a abrir en claro.
 function temaActual(){
-  // La elección guardada manda. El atributo es solo el estado ya pintado, y el
-  // script del <head> podría no haber corrido: así el tema nunca se pierde.
-  let guardado = null;
-  try { guardado = localStorage.getItem('hawaki-tema'); } catch(e){}
-  if(guardado === 'dark' || guardado === 'light') return guardado;
+  // Lo elegido en esta visita manda. El atributo es solo el estado ya pintado,
+  // y el script del <head> podría no haber corrido.
+  let elegido = null;
+  try { elegido = sessionStorage.getItem('hawaki-tema'); } catch(e){}
+  if(elegido === 'dark' || elegido === 'light') return elegido;
   return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
 }
 function aplicarTema(t){
@@ -909,10 +913,15 @@ function aplicarTema(t){
 }
 function toggleTheme(){
   const t = temaActual() === 'dark' ? 'light' : 'dark';
-  try { localStorage.setItem('hawaki-tema', t); } catch(e){}
+  // sessionStorage: se borra solo al cerrar la pestaña, así la próxima visita
+  // vuelve a empezar en claro.
+  try { sessionStorage.setItem('hawaki-tema', t); } catch(e){}
   aplicarTema(t);
 }
 aplicarTema(temaActual());
+// Borra la preferencia permanente que guardaba la versión anterior. Va también
+// aquí y no solo en el <head> por si aquel script no llegara a ejecutarse.
+try { localStorage.removeItem('hawaki-tema'); } catch(e){}
 
 // ══════════ CARGAR BANNERS (HERO) DESDE SUPABASE ══════════
 let HEROES = [], heroIdx = 0, heroSlideActiva = 'A';
