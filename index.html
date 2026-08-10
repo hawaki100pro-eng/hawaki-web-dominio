@@ -523,6 +523,53 @@ const SIZES = [35,36,37,38,39,40];
 let PRODUCTS = [];
 let TAG_COLORS = {}; // nombre de etiqueta -> color
 let cart = [];
+
+// ══════════ CARRITO GUARDADO ══════════
+// Vive en el teléfono de la clienta, nunca viaja a Supabase. Sirve para que no
+// pierda su selección si se sale a WhatsApp, recarga o vuelve al día siguiente.
+const CARRITO_CLAVE = 'hawaki-carrito';
+const CARRITO_DIAS = 14;   // pasado ese tiempo el carrito ya no representa nada
+
+function guardarCarrito(){
+  try {
+    if(!cart.length){ localStorage.removeItem(CARRITO_CLAVE); return; }
+    localStorage.setItem(CARRITO_CLAVE, JSON.stringify({ guardadoEn: Date.now(), items: cart }));
+  } catch(e){}   // incógnito o almacenamiento lleno: seguimos sin guardar, no rompemos nada
+}
+
+function leerCarritoGuardado(){
+  try {
+    const crudo = localStorage.getItem(CARRITO_CLAVE);
+    if(!crudo) return [];
+    const d = JSON.parse(crudo);
+    if(!d || !Array.isArray(d.items)) return [];
+    if((Date.now() - (d.guardadoEn || 0)) / 86400000 > CARRITO_DIAS){
+      localStorage.removeItem(CARRITO_CLAVE);
+      return [];
+    }
+    return d.items;
+  } catch(e){ return []; }
+}
+
+// Compara lo guardado con el catálogo real: saca lo que ya no existe y corrige
+// los precios que cambiaste en el panel. Sin esto llegarían pedidos por
+// WhatsApp con precios viejos o con productos que ya no vendes.
+function revalidarCarrito(){
+  if(!cart.length) return;
+  const avisos = [];
+  cart = cart.filter(item => {
+    const p = PRODUCTS.find(x => x.id === item.id);
+    if(!p){ avisos.push(`${item.name} ya no está disponible`); return false; }
+    const color = p.colors.find(c => c.name === item.color);
+    if(!color){ avisos.push(`${item.name} ya no viene en ${item.color}`); return false; }
+    if(!p.sizes.includes(item.size)){ avisos.push(`${item.name} ya no tiene talla ${item.size}`); return false; }
+    if(p.price !== item.price) avisos.push(`${item.name} cambió de precio`);
+    item.price = p.price; item.name = p.name; item.model = p.model; item.img = color.img;
+    return true;
+  });
+  updateCartUI();
+  if(avisos.length) showToast(avisos.length === 1 ? avisos[0] : `${avisos.length} cosas de tu carrito cambiaron`);
+}
 let curP = null, selColor = 0, selSize = null;
 
 // ══════════ CARGAR COLORES DE ETIQUETAS ══════════
@@ -562,6 +609,7 @@ async function loadProducts(){
       sizes: (Array.isArray(p.tallas) && p.tallas.length) ? p.tallas.slice().sort((a, b) => a - b) : SIZES
     }));
     renderProducts();
+    revalidarCarrito();   // ya tenemos el catálogo real: comprobamos el carrito guardado
   } catch(err){
     document.getElementById('productsWrap').innerHTML = `
       <div class="loading-state">
@@ -795,6 +843,7 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') closeGuide();
 
 // ══════════ CARRITO ══════════
 function updateCartUI(){
+  guardarCarrito();   // todo cambio del carrito pasa por aquí, así no se nos escapa ninguno
   const count = cart.reduce((a,i) => a + i.qty, 0);
   document.getElementById('cartCount').textContent = count;
   const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
@@ -846,6 +895,13 @@ function sendWA(){
   const msg = `¡Hola! Soy ${name} y quisiera adquirir:\n\n${lines}\n\nTotal: $${total.toFixed(2)}\nCon envío a ${city}\nDirección: ${addr}\n\n¡Quedo atenta a su confirmación! 💗`;
   window.open(`https://wa.me/593990788739?text=${encodeURIComponent(msg)}`, '_blank');
   closeCheckout();
+  // El pedido ya salió: vaciamos para que al volver no encuentre lo mismo
+  // y lo pida dos veces sin querer.
+  cart = [];
+  updateCartUI();
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  showToast('¡Pedido enviado! Te escribimos por WhatsApp 💗');
 }
 
 // ══════════ CATEGORÍAS ══════════
@@ -1022,6 +1078,10 @@ function heroNav(dir){
 }
 
 // ¡Arrancamos!
+// El carrito guardado se muestra de una, para que el contador no aparezca en
+// cero y asuste. Se revisa contra el catálogo apenas carguen los productos.
+cart = leerCarritoGuardado();
+updateCartUI();
 loadHero();
 Promise.all([loadEtiquetas(), loadCategorias()]).then(loadProducts);
 </script>
