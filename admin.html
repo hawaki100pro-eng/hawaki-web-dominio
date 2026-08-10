@@ -105,7 +105,12 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
       <label>Contraseña</label>
       <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
+    <label style="display:flex;align-items:center;gap:9px;margin:4px 0 16px;font-size:.85rem;color:var(--text-muted);cursor:pointer;">
+      <input type="checkbox" id="loginRecordar" checked style="width:17px;height:17px;accent-color:var(--rose);cursor:pointer;">
+      Recordarme en este dispositivo
+    </label>
     <button class="btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
+    <p style="font-size:.72rem;color:var(--text-muted);margin-top:12px;line-height:1.5;">Desmárcalo si entras desde un equipo que no es tuyo.</p>
   </div>
 </div>
 
@@ -275,7 +280,8 @@ async function doLogin(){
       throw new Error(data.error_description || data.msg || 'Credenciales incorrectas');
     }
     session = data;
-    sessionStorage.setItem('hawaki_session', JSON.stringify(data));
+    guardarSesion(data, document.getElementById('loginRecordar').checked);
+    programarRenovacion();
     showPanel();
   } catch(err){
     errEl.textContent = '❌ ' + (err.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : err.message);
@@ -288,9 +294,65 @@ async function doLogin(){
 
 function doLogout(){
   session = null;
-  sessionStorage.removeItem('hawaki_session');
+  clearTimeout(temporizadorSesion);
+  borrarSesion();
   document.getElementById('panel').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ══════════ SESIÓN: DÓNDE SE GUARDA Y CÓMO SE RENUEVA ══════════
+// "Recordarme" -> localStorage (sobrevive al cerrar). Sin marcar -> sessionStorage
+// (se borra al cerrar la pestaña, para equipos ajenos).
+const SESION_CLAVE = 'hawaki_session';
+let temporizadorSesion = null;
+
+function guardarSesion(data, recordar){
+  data.recordar = !!recordar;
+  data.expira_en = Date.now() + ((data.expires_in || 3600) * 1000);
+  const destino = recordar ? localStorage : sessionStorage;
+  const otro    = recordar ? sessionStorage : localStorage;
+  try { otro.removeItem(SESION_CLAVE); } catch(e){}
+  try { destino.setItem(SESION_CLAVE, JSON.stringify(data)); } catch(e){}
+}
+
+function leerSesion(){
+  try {
+    const crudo = localStorage.getItem(SESION_CLAVE) || sessionStorage.getItem(SESION_CLAVE);
+    return crudo ? JSON.parse(crudo) : null;
+  } catch(e){ return null; }
+}
+
+function borrarSesion(){
+  try { localStorage.removeItem(SESION_CLAVE); } catch(e){}
+  try { sessionStorage.removeItem(SESION_CLAVE); } catch(e){}
+}
+
+// Supabase entrega un refresh_token que antes no se usaba: por eso te sacaba
+// del panel al cabo de una hora, aunque tuvieras la pestaña abierta.
+async function renovarSesion(){
+  if(!session || !session.refresh_token) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: session.refresh_token })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.access_token) return false;
+    const recordar = session.recordar;
+    session = data;
+    guardarSesion(data, recordar);
+    programarRenovacion();
+    return true;
+  } catch(e){ return false; }
+}
+
+function programarRenovacion(){
+  clearTimeout(temporizadorSesion);
+  if(!session || !session.expira_en) return;
+  // Dos minutos antes de caducar, para que nunca te agarre a media subida
+  const ms = Math.max(30000, session.expira_en - Date.now() - 120000);
+  temporizadorSesion = setTimeout(renovarSesion, ms);
 }
 
 function showPanel(){
@@ -304,11 +366,18 @@ function showPanel(){
 }
 
 // Restore session if exists
-(function(){
-  const saved = sessionStorage.getItem('hawaki_session');
-  if(saved){
-    try { session = JSON.parse(saved); showPanel(); } catch(e){}
+(async function(){
+  const saved = leerSesion();
+  if(!saved || !saved.access_token) return;
+  session = saved;
+  // Si el guardado ya venció (o le queda menos de un minuto) lo renovamos antes
+  // de entrar; si la renovación falla, se queda en la pantalla de login.
+  if(!saved.expira_en || Date.now() > saved.expira_en - 60000){
+    if(!await renovarSesion()){ session = null; borrarSesion(); return; }
+  } else {
+    programarRenovacion();
   }
+  showPanel();
 })();
 
 function authHeaders(){
@@ -416,7 +485,12 @@ async function uploadHero(file){
   } catch(err){
     statusEl.textContent = '';
     showToast('❌ ' + err.message);
-    if(err.message.includes('JWT') || err.message.includes('token')){ doLogout(); }
+    if(err.message.includes('JWT') || err.message.includes('token')){
+      // Antes te sacaba directo. Ahora intentamos renovar y solo te pedimos la
+      // clave si de verdad ya no se puede.
+      if(await renovarSesion()) showToast('🔄 Sesión renovada, intenta de nuevo');
+      else doLogout();
+    }
   }
 }
 
@@ -529,8 +603,12 @@ async function uploadPhoto(file, rowIndex){
     statusEl.textContent = '';
     showToast('❌ ' + err.message);
     if(err.message.includes('JWT') || err.message.includes('token')){
-      showToast('Tu sesión expiró. Vuelve a iniciar sesión.');
-      doLogout();
+      if(await renovarSesion()){
+        showToast('🔄 Sesión renovada, vuelve a subir la foto');
+      } else {
+        showToast('Tu sesión expiró. Vuelve a iniciar sesión.');
+        doLogout();
+      }
     }
   }
 }
