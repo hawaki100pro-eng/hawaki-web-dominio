@@ -37,6 +37,13 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 .panel-header .actions{display:flex;gap:8px;}
 .hbtn{background:rgba(255,255,255,.2);color:var(--white);border:none;border-radius:20px;padding:8px 16px;font-family:'Poppins',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .2s;}
 .hbtn:hover{background:rgba(255,255,255,.35);}
+.buscador{display:flex;align-items:center;gap:8px;position:relative;flex:1;max-width:380px;min-width:200px;}
+.buscador input{width:100%;border:2px solid var(--blue-light);border-radius:10px;padding:9px 34px 9px 34px;font-family:inherit;font-size:.88rem;color:var(--text);background:var(--white);}
+.buscador input:focus{outline:none;border-color:var(--rose);}
+.buscador .lupa{position:absolute;left:11px;font-size:.9rem;pointer-events:none;opacity:.6;}
+.buscador .limpiar{position:absolute;right:8px;border:none;background:var(--rose-light);color:var(--rose-dark);border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}
+.buscador.conTexto .limpiar{display:flex;}
+.buscador-info{font-size:.78rem;color:var(--text-muted);font-weight:600;white-space:nowrap;}
 .section-title{font-size:1.2rem;font-weight:700;margin:28px 0 16px;color:var(--blue);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 
 /* Product form card */
@@ -212,7 +219,15 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
     <button class="btn" id="saveBtn" onclick="saveProduct()">💾 Guardar Producto</button>
   </div>
 
-  <div class="section-title"><span>📦 Productos del catálogo</span></div>
+  <div class="section-title">
+    <span>📦 Productos del catálogo</span>
+    <div class="buscador" id="buscadorWrap">
+      <span class="lupa">🔍</span>
+      <input type="search" id="buscarProducto" placeholder="Buscar nombre, modelo, categoría…" oninput="renderList()" autocomplete="off">
+      <button type="button" class="limpiar" onclick="limpiarBusqueda()" title="Limpiar búsqueda" aria-label="Limpiar búsqueda">✕</button>
+    </div>
+    <span class="buscador-info" id="buscadorInfo"></span>
+  </div>
   <div class="plist" id="plist">
     <div class="spinner"></div>
   </div>
@@ -1005,13 +1020,50 @@ async function loadProducts(){
   }
 }
 
+// Quita acentos y mayusculas: asi 'ortopedicas' encuentra 'Ortopedicas'
+function normalizar(t){
+  return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function productosFiltrados(){
+  const campo = document.getElementById('buscarProducto');
+  const q = normalizar(campo ? campo.value : '').trim();
+  if(!q) return products;
+  const palabras = q.split(/\s+/);
+  return products.filter(p => {
+    const texto = normalizar([
+      p.nombre, p.modelo, CATEGORIAS[p.categoria] || p.categoria, p.badge,
+      (p.colores || []).map(c => c.nombre).join(' ')
+    ].join(' '));
+    return palabras.every(w => texto.includes(w));   // todas las palabras deben aparecer
+  });
+}
+
+function limpiarBusqueda(){
+  const campo = document.getElementById('buscarProducto');
+  if(campo){ campo.value = ''; campo.focus(); }
+  renderList();
+}
+
 function renderList(){
   const el = document.getElementById('plist');
+  const campo = document.getElementById('buscarProducto');
+  const busqueda = campo ? campo.value.trim() : '';
+  const wrap = document.getElementById('buscadorWrap');
+  if(wrap) wrap.classList.toggle('conTexto', !!busqueda);
   if(!products.length){
     el.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">No hay productos aún. ¡Crea el primero arriba! 👆</p>';
+    const info0 = document.getElementById('buscadorInfo'); if(info0) info0.textContent = '';
     return;
   }
-  el.innerHTML = products.map(p => {
+  const lista = productosFiltrados();
+  const info = document.getElementById('buscadorInfo');
+  if(info) info.textContent = busqueda ? lista.length + ' de ' + products.length : products.length + ' productos';
+  if(!lista.length){
+    el.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px;">Ningún producto coincide con esa búsqueda.<br><button class="mini-btn mini-rose" style="margin-top:12px;" onclick="limpiarBusqueda()">Ver todos</button></p>';
+    return;
+  }
+  el.innerHTML = lista.map(p => {
     const img = (p.colores || []).find(c => c.img);
     return `
       <div class="pitem ${p.activo ? '' : 'inactive'}">
