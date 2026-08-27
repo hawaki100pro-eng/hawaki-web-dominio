@@ -318,10 +318,10 @@ footer strong{color:var(--rose);}
   --footer-bg:#0E0A10;--rose-grad-end:#8E3358;--blue-text:#9CC4EA;--foto-brillo:.9;--cta-bg:rgba(26,20,24,.88);--arrow-bg:rgba(44,36,48,.92);--arrow-bg-movil:rgba(44,36,48,.8);--fade-from:rgba(23,18,25,0);--btn-off-bg:#3A3340;--btn-off-text:#A99FA6;--chip-border:rgba(255,255,255,.2);--chip-text:#B3A3AC;--input-bg:#2C2430;--border-linea:rgba(255,255,255,.14);
 }
 .header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.theme-btn{background:transparent;color:var(--white);border:2px solid rgba(255,255,255,.9);border-radius:50%;width:46px;height:46px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;line-height:1;transition:all .2s;}
-.theme-btn:hover{background:rgba(255,255,255,.18);}
-@media(max-width:640px){.theme-btn{width:42px;height:42px;font-size:1rem;}.header-actions{gap:6px;}}
-@media(max-width:380px){.theme-btn{width:40px;height:40px;font-size:.95rem;}.header-actions{gap:5px;}}
+.theme-btn{background:rgba(255,255,255,.1);color:var(--white);border:none;border-radius:20px;padding:8px 16px;margin:0 auto 10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:'Poppins',sans-serif;font-size:.75rem;font-weight:600;line-height:1;transition:background .2s,transform .2s;}
+.theme-btn:hover{background:var(--rose);transform:translateY(-2px);}
+@media(max-width:640px){.header-actions{gap:6px;}}
+@media(max-width:380px){.header-actions{gap:5px;}}
 @media(max-width:380px){
   .products-grid{gap:8px;}
   .product-card{flex:0 0 46%;}
@@ -352,7 +352,6 @@ footer strong{color:var(--rose);}
       </div>
     </nav>
     <div class="header-actions">
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Cambiar a modo noche" title="Modo noche">🌙</button>
     <button class="cart-btn" onclick="toggleCart()" aria-label="Carrito"><svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg><span class="cart-count" id="cartCount">0</span></button>
     </div>
   </div>
@@ -478,6 +477,7 @@ footer strong{color:var(--rose);}
       <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
     </a>
   </div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Cambiar a modo noche" title="Modo noche"><span id="themeIcon">🌙</span><span id="themeLabel">Modo noche</span></button>
   <a href="admin.html" style="opacity:.25;font-size:.65rem;color:inherit;text-decoration:none;margin-top:6px;display:inline-block;">·</a>
 </footer>
 
@@ -959,7 +959,8 @@ function aplicarTema(t){
   document.documentElement.setAttribute('data-theme', t);
   const b = document.getElementById('themeBtn');
   if(b){
-    b.textContent = t === 'dark' ? '☀️' : '🌙';
+    document.getElementById('themeIcon').textContent = t === 'dark' ? '☀️' : '🌙';
+    document.getElementById('themeLabel').textContent = t === 'dark' ? 'Modo día' : 'Modo noche';
     b.setAttribute('aria-label', t === 'dark' ? 'Cambiar a modo día' : 'Cambiar a modo noche');
     b.title = t === 'dark' ? 'Modo día' : 'Modo noche';
   }
