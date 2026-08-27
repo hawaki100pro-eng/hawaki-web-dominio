@@ -384,7 +384,7 @@ footer strong{color:var(--rose);}
 <div class="section-cats">
   <div class="buscador" id="buscador">
     <i class="lupa">🔍</i>
-    <input type="search" id="qBuscar" placeholder="Busca tu modelo favorito" aria-label="Buscar modelos" autocomplete="off" oninput="buscar()" onkeydown="if(event.key==='Escape') limpiarBusqueda()">
+    <input type="search" id="qBuscar" placeholder="Busca modelo, color, talla o precio" aria-label="Buscar modelos por nombre, color, talla o precio" autocomplete="off" oninput="buscar()" onkeydown="if(event.key==='Escape') limpiarBusqueda()">
     <button class="limpiar" onclick="limpiarBusqueda()" aria-label="Borrar búsqueda">✕</button>
   </div>
   <div class="cat-row" id="catRow"></div>
@@ -930,27 +930,81 @@ function normalizar(s){
   return (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+function precioBonito(n){ return Number.isInteger(n) ? '$' + n : '$' + n.toFixed(2); }
+
+// Entiende frases de precio: "hasta 30", "mas de 35", "entre 28 y 40", "30 a 40", "$30"
+function analizarConsulta(texto){
+  // Escribir el signo $ significa que se busca por precio, no por talla
+  const soloPrecio = /\$\s*\d|\d\s*(?:dolares|usd)/.test(normalizar(texto));
+  let q = ' ' + normalizar(texto).replace(/\$/g, ' ').replace(/\b(?:dolares|usd)\b/g, ' ').replace(/(\d),(\d)/g, '$1.$2') + ' ';
+  const num = '(\\d+(?:\\.\\d+)?)';
+  let min = null, max = null, exacto = null, desc = '', m;
+
+  if(m = q.match(new RegExp('entre\\s+' + num + '\\s*(?:y|a|-)\\s*' + num))){
+    min = +m[1]; max = +m[2]; desc = `entre ${precioBonito(min)} y ${precioBonito(max)}`;
+  } else if(m = q.match(new RegExp('(?:menos|menor|bajo|debajo|hasta|maximo|max|barato)\\s*(?:de|a|que)?\\s*' + num))){
+    max = +m[1]; desc = `hasta ${precioBonito(max)}`;
+  } else if(m = q.match(new RegExp('(?:mas|mayor|desde|sobre|arriba|minimo|min)\\s*(?:de|a|que)?\\s*' + num))){
+    min = +m[1]; desc = `desde ${precioBonito(min)}`;
+  } else if(m = q.match(new RegExp(num + '\\s*(?:a|-)\\s*' + num))){
+    min = +m[1]; max = +m[2]; desc = `entre ${precioBonito(min)} y ${precioBonito(max)}`;
+  }
+  if(m) q = q.replace(m[0], ' ');
+
+  // Un número suelto: puede ser un precio aproximado o una talla
+  if(min === null && max === null && (m = q.match(new RegExp('\\s' + num + '\\s')))){
+    exacto = +m[1];
+    q = q.replace(m[0], ' ');
+  }
+  return { palabras: q.trim().split(/\s+/).filter(Boolean), min, max, exacto, desc, soloPrecio };
+}
+
 function buscar(){
   const input = document.getElementById('qBuscar');
-  const q = normalizar(input.value.trim());
   document.getElementById('buscador').classList.toggle('conTexto', input.value.length > 0);
 
-  if(!q){ restaurarCatalogo(); return; }
+  if(!input.value.trim()){ restaurarCatalogo(); return; }
+
+  const c = analizarConsulta(input.value);
+  if(!c.palabras.length && c.min === null && c.max === null && c.exacto === null){
+    restaurarCatalogo(); return;
+  }
 
   const hallados = PRODUCTS.filter(p => {
-    const donde = [p.name, p.model, p.badge, CATEGORIAS[p.category], ...p.colors.map(c => c.name)];
-    return donde.some(t => normalizar(t).includes(q));
+    const campos = [p.name, p.model, p.badge, CATEGORIAS[p.category], ...p.colors.map(x => x.name)].map(normalizar);
+    // Cada palabra escrita debe aparecer en algún dato del producto
+    if(!c.palabras.every(w => campos.some(t => t.includes(w)))) return false;
+    if(c.min !== null && p.price < c.min - 0.001) return false;
+    if(c.max !== null && p.price > c.max + 0.001) return false;
+    if(c.exacto !== null){
+      const porPrecio = Math.floor(p.price) === c.exacto || Math.ceil(p.price) === c.exacto;
+      const porTalla = !c.soloPrecio && (p.sizes || []).includes(c.exacto);
+      if(!porPrecio && !porTalla) return false;
+    }
+    return true;
   });
 
   const wrap = document.getElementById('productsWrap');
   if(!hallados.length){
-    wrap.innerHTML = `<div class="busca-info">No encontramos nada con <strong>“${input.value.trim()}”</strong>.<br>Prueba con otro nombre, color o categoría 🌸</div>`;
+    wrap.innerHTML = `<div class="busca-info">No encontramos nada con <strong>“${input.value.trim()}”</strong>.<br>Prueba con otro nombre, color, talla o precio 🌸</div>`;
     return;
   }
+  const n = hallados.length;
+  let detalle = c.desc;
+  // Si se escribió un número suelto, aclara si fue por talla o por precio
+  if(!detalle && c.exacto !== null){
+    const todosPrecio = hallados.every(p => Math.floor(p.price) === c.exacto || Math.ceil(p.price) === c.exacto);
+    const todosTalla = !c.soloPrecio && hallados.every(p => (p.sizes || []).includes(c.exacto));
+    if(todosTalla && !todosPrecio) detalle = `en talla ${c.exacto}`;
+    else if(todosPrecio && !todosTalla) detalle = `a ${precioBonito(c.exacto)}`;
+  }
+  const rotulo = detalle
+    ? `${n} ${n === 1 ? 'modelo' : 'modelos'} ${detalle}`
+    : `${n} ${n === 1 ? 'modelo encontrado' : 'modelos encontrados'}`;
   wrap.innerHTML = `
     <div class="category-section visible">
       <div class="category-head">
-        <div class="category-label">${hallados.length} ${hallados.length === 1 ? 'modelo encontrado' : 'modelos encontrados'}</div>
+        <div class="category-label">${rotulo}</div>
       </div>
       <div class="grid-resultados">${hallados.map(p => cardHTML(p)).join('')}</div>
     </div>`;
