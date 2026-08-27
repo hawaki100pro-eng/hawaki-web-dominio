@@ -78,6 +78,17 @@ header{background:var(--header-bg);position:sticky;top:0;z-index:100;box-shadow:
 .hero-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
 .badge{background:var(--surface-2);border-radius:20px;padding:6px 16px;font-size:.78rem;color:var(--blue-text);font-weight:500;box-shadow:0 2px 8px rgba(59,111,160,.12);}
 .section-cats{max-width:1200px;margin:32px auto 0;padding:0 24px;}
+.buscador{position:relative;display:flex;align-items:center;max-width:440px;margin:0 auto 16px;}
+.buscador input{width:100%;background:var(--input-bg);border:2px solid var(--blue-light);border-radius:24px;padding:11px 40px 11px 42px;font-family:'Poppins',sans-serif;font-size:.9rem;color:var(--text);}
+.buscador input:focus{outline:none;border-color:var(--rose);}
+.buscador input::-webkit-search-cancel-button{display:none;}
+.buscador .lupa{position:absolute;left:15px;font-size:.95rem;font-style:normal;pointer-events:none;opacity:.65;}
+.buscador .limpiar{position:absolute;right:10px;border:none;background:var(--rose-light);color:var(--rose-dark);border-radius:50%;width:24px;height:24px;font-size:.7rem;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;font-family:'Poppins',sans-serif;}
+.buscador.conTexto .limpiar{display:flex;}
+.busca-info{text-align:center;font-size:.85rem;color:var(--text-muted);padding:34px 20px;}
+.busca-info strong{color:var(--rose);}
+.grid-resultados{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px;padding:8px 2px 14px;}
+.grid-resultados .product-card{flex:none;width:auto;}
 .products-wrap{max-width:1200px;margin:0 auto;padding:28px 24px 60px;}
 .category-section{display:none;}
 .category-section.visible{display:block;}
@@ -252,12 +263,16 @@ footer strong{color:var(--rose);}
   .hero-badges{gap:6px;}
   .badge{font-size:.72rem;padding:5px 12px;}
   .section-cats{margin:16px auto 0;padding:0;}
+  .buscador{margin:0 12px 12px;}
+  .buscador input{padding:10px 38px 10px 38px;font-size:.85rem;}
+  .buscador .lupa{left:13px;font-size:.88rem;}
   .cat-row{gap:8px;flex-wrap:nowrap;overflow-x:auto;padding:4px 12px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .cat-row::-webkit-scrollbar{display:none;}
   .tab-btn{padding:7px 14px;font-size:.75rem;white-space:nowrap;flex-shrink:0;}
   .products-wrap{padding:16px 12px 48px;}
   .products-grid{gap:10px;padding:6px 0 12px;}
   .product-card{flex:0 0 45%;}
+  .grid-resultados{grid-template-columns:repeat(2,1fr);gap:10px;padding:6px 0 12px;}
   .category-head{margin-bottom:10px;gap:8px;}
   .swipe-hint{font-size:.68rem;padding:4px 10px;gap:4px;}
   .row-fade{width:34px;bottom:12px;}
@@ -367,6 +382,11 @@ footer strong{color:var(--rose);}
 </section>
 
 <div class="section-cats">
+  <div class="buscador" id="buscador">
+    <i class="lupa">🔍</i>
+    <input type="search" id="qBuscar" placeholder="Busca tu modelo favorito" aria-label="Buscar modelos" autocomplete="off" oninput="buscar()" onkeydown="if(event.key==='Escape') limpiarBusqueda()">
+    <button class="limpiar" onclick="limpiarBusqueda()" aria-label="Borrar búsqueda">✕</button>
+  </div>
   <div class="cat-row" id="catRow"></div>
 </div>
 
@@ -904,8 +924,67 @@ function sendWA(){
   showToast('¡Pedido enviado! Te escribimos por WhatsApp 💗');
 }
 
+// ══════════ BUSCADOR ══════════
+// Quita tildes y mayúsculas para que "moises" encuentre "Moisés"
+function normalizar(s){
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function buscar(){
+  const input = document.getElementById('qBuscar');
+  const q = normalizar(input.value.trim());
+  document.getElementById('buscador').classList.toggle('conTexto', input.value.length > 0);
+
+  if(!q){ restaurarCatalogo(); return; }
+
+  const hallados = PRODUCTS.filter(p => {
+    const donde = [p.name, p.model, p.badge, CATEGORIAS[p.category], ...p.colors.map(c => c.name)];
+    return donde.some(t => normalizar(t).includes(q));
+  });
+
+  const wrap = document.getElementById('productsWrap');
+  if(!hallados.length){
+    wrap.innerHTML = `<div class="busca-info">No encontramos nada con <strong>“${input.value.trim()}”</strong>.<br>Prueba con otro nombre, color o categoría 🌸</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="category-section visible">
+      <div class="category-head">
+        <div class="category-label">${hallados.length} ${hallados.length === 1 ? 'modelo encontrado' : 'modelos encontrados'}</div>
+      </div>
+      <div class="grid-resultados">${hallados.map(p => cardHTML(p)).join('')}</div>
+    </div>`;
+}
+
+function limpiarBusqueda(){
+  const input = document.getElementById('qBuscar');
+  input.value = '';
+  document.getElementById('buscador').classList.remove('conTexto');
+  restaurarCatalogo();
+  input.focus();
+}
+
+// Vuelve a mostrar el catálogo normal, respetando la categoría que esté activa
+function restaurarCatalogo(){
+  renderProducts();
+  const activa = document.querySelector('#catRow .tab-btn.active');
+  const idx = activa ? [...document.querySelectorAll('#catRow .tab-btn')].indexOf(activa) : 0;
+  const cat = idx <= 0 ? 'todas' : (CATS[idx - 1]?.id || 'todas');
+  document.querySelectorAll('.category-section').forEach(s => {
+    s.classList.toggle('visible', cat === 'todas' || s.id === 'cat-' + cat);
+  });
+  initRows();
+}
+
 // ══════════ CATEGORÍAS ══════════
 function showCat(cat, btn){
+  // Elegir una categoría cancela la búsqueda en curso
+  const qi = document.getElementById('qBuscar');
+  if(qi && qi.value){
+    qi.value = '';
+    document.getElementById('buscador').classList.remove('conTexto');
+    renderProducts();
+  }
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => {
     const t = b.textContent.trim().toLowerCase();
