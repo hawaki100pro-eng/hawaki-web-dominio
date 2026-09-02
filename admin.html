@@ -44,6 +44,17 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 .buscador .limpiar{position:absolute;right:8px;border:none;background:var(--rose-light);color:var(--rose-dark);border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}
 .buscador.conTexto .limpiar{display:flex;}
 .buscador-info{font-size:.78rem;color:var(--text-muted);font-weight:600;white-space:nowrap;}
+.cat-fila{display:flex;align-items:center;gap:11px;padding:9px 12px;border:1.5px solid var(--blue-light);border-radius:12px;background:var(--white);margin-bottom:8px;}
+.cat-pos{width:23px;height:23px;border-radius:50%;background:var(--rose-light);color:var(--rose-dark);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cat-mover{display:flex;flex-direction:column;gap:3px;flex-shrink:0;}
+.cat-mover button{border:none;background:var(--blue-light);color:var(--blue);width:24px;height:15px;border-radius:4px;cursor:pointer;font-size:.58rem;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;}
+.cat-mover button:hover:not(:disabled){background:var(--blue);color:var(--white);}
+.cat-mover button:disabled{opacity:.28;cursor:default;}
+.cat-nombre{flex:1;font-size:.89rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cat-cuenta{font-size:.74rem;color:var(--text-muted);white-space:nowrap;}
+.cat-cuenta.sin{color:var(--red);font-weight:600;}
+.cat-acciones{display:flex;gap:6px;flex-shrink:0;}
+@media(max-width:560px){.cat-cuenta{display:none;}}
 .section-title{font-size:1.2rem;font-weight:700;margin:28px 0 16px;color:var(--blue);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 
 /* Product form card */
@@ -152,7 +163,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 
   <div class="section-title"><span>📂 Categorías</span></div>
   <div class="form-card">
-    <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:14px;">Las categorías organizan tu catálogo y aparecen como pestañas en la tienda. Puedes renombrarlas (✏️) o eliminarlas (✕).</div>
+    <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:14px;">Las categorías organizan tu catálogo y aparecen en la tienda <strong>en este mismo orden</strong>. Usa ▲ ▼ para moverlas, ✏️ para renombrar y ✕ para eliminar.</div>
     <div class="tags-list" id="catsList"><div class="spinner"></div></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
       <input type="text" id="newCatName" placeholder="Nombre de la categoría (Ej: Botas)" maxlength="30" style="flex:1;min-width:180px;border:2px solid var(--blue-light);border-radius:10px;padding:11px 14px;font-family:'Poppins',sans-serif;font-size:.9rem;">
@@ -717,13 +728,42 @@ function renderCats(){
     el.innerHTML = '<span style="font-size:.82rem;color:var(--text-muted);">No hay categorías. Crea la primera abajo 👇 (sin categorías la tienda no muestra productos)</span>';
     return;
   }
-  el.innerHTML = categorias.map((c, i) => `
-    <div class="tag-chip">
-      ${c.nombre}
-      <button style="background:var(--rose-light);color:var(--rose-dark);" onclick="renameCat(${i})" title="Renombrar">✏️</button>
-      <button onclick="deleteCat(${i})" title="Eliminar">✕</button>
-    </div>
-  `).join('');
+  el.innerHTML = categorias.map((c, i) => {
+    // Cuantos productos tiene: revela de un vistazo las categorias vacias
+    const n = products.filter(p => p.categoria === c.id).length;
+    const texto = products.length ? (n ? n + (n === 1 ? ' producto' : ' productos') : 'sin productos') : '';
+    return `
+    <div class="cat-fila">
+      <span class="cat-pos">${i + 1}</span>
+      <span class="cat-mover">
+        <button onclick="moverCat(${i},-1)" title="Subir" aria-label="Subir ${c.nombre}" ${i === 0 ? 'disabled' : ''}>▲</button>
+        <button onclick="moverCat(${i},1)" title="Bajar" aria-label="Bajar ${c.nombre}" ${i === categorias.length - 1 ? 'disabled' : ''}>▼</button>
+      </span>
+      <span class="cat-nombre">${c.nombre}</span>
+      <span class="cat-cuenta ${n ? '' : 'sin'}">${texto}</span>
+      <span class="cat-acciones">
+        <button class="mini-btn mini-rose" onclick="renameCat(${i})" title="Renombrar">✏️</button>
+        <button class="mini-btn mini-red" onclick="deleteCat(${i})" title="Eliminar">✕</button>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+// Mueve una categoria y guarda enseguida. Si falla, se deshace el cambio.
+async function moverCat(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= categorias.length) return;
+  const respaldo = categorias.map(c => ({ ...c }));
+  const tmp = categorias[i]; categorias[i] = categorias[j]; categorias[j] = tmp;
+  renderCats();
+  try {
+    await saveCats();
+    showToast('✅ ' + categorias[j].nombre + ' ahora va en la posición ' + (j + 1));
+  } catch(err){
+    categorias = respaldo;
+    renderCats();
+    showToast('❌ ' + err.message);
+  }
 }
 
 function refreshCategoriaSelect(keepValue){
@@ -1015,6 +1055,7 @@ async function loadProducts(){
     products = await res.json();
     renderList();
     if(heroImgs.length) renderHeroList();   // ahora sí puede llenar el desplegable de cada banner
+    renderCats();                           // ya podemos mostrar cuantos productos tiene cada categoria
   } catch(err){
     document.getElementById('plist').innerHTML = `<p style="text-align:center;color:var(--red);">Error al cargar productos. <button class="mini-btn mini-rose" onclick="loadProducts()">Reintentar</button></p>`;
   }
