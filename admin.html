@@ -53,6 +53,10 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 .cat-nombre{flex:1;font-size:.89rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cat-cuenta{font-size:.74rem;color:var(--text-muted);white-space:nowrap;}
 .cat-cuenta.sin{color:var(--red);font-weight:600;}
+.check-hombre{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600;}
+.check-hombre input{width:18px;height:18px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;}
+#avisoHombre{display:block;margin-top:5px;font-size:.75rem;color:var(--text-muted);line-height:1.4;}
+.pitem-hombre{color:var(--blue);font-weight:700;}
 .cat-trato{font-family:'Poppins',sans-serif;font-size:.76rem;padding:5px 6px;border:1.5px solid var(--blue-light);border-radius:9px;background:var(--white);color:var(--text);cursor:pointer;flex-shrink:0;}
 .cat-acciones{display:flex;gap:6px;flex-shrink:0;}
 @media(max-width:560px){.cat-cuenta{display:none;}}
@@ -201,6 +205,13 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
       <div class="field">
         <label>Categoría *</label>
         <select id="fCategoria" onchange="aplicarTallasDeCategoria()"></select>
+      </div>
+      <div class="field">
+        <label class="check-hombre">
+          <input type="checkbox" id="fEsHombre" onchange="aplicarTallasDeCategoria()">
+          <span>👨 Es un modelo de hombre</span>
+        </label>
+        <small id="avisoHombre">Marca esto y solo este modelo saldrá en azul con “¡Lo quiero!”, aunque esté en una categoría de mujer.</small>
       </div>
       <div class="field">
         <label>Precio ($) *</label>
@@ -407,7 +418,7 @@ function showPanel(){
   loadHero();
   loadCategorias();
   loadTags();
-  loadProducts();
+  loadProductosHombre().then(loadProducts);   // la lista marca los modelos de hombre
 }
 
 // Restore session if exists
@@ -733,6 +744,35 @@ function saveCats(){
   return saveConfig('categorias', JSON.stringify(categorias));
 }
 
+// ══════════ MODELOS DE HOMBRE SUELTOS ══════════
+// Se guardan como una lista de ids en config_tienda, igual que las categorias,
+// para no tener que agregar una columna nueva a la tabla de productos.
+let PRODUCTOS_HOMBRE = [];
+
+async function loadProductosHombre(){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config_tienda?select=valor&clave=eq.productos_hombre`, {
+      headers: authHeaders()
+    });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data[0]?.valor) PRODUCTOS_HOMBRE = JSON.parse(data[0].valor).map(String);
+  } catch(err){ console.log('loadProductosHombre', err); }
+}
+
+function esProductoHombre(id){ return PRODUCTOS_HOMBRE.includes(String(id)); }
+
+// Agrega o saca un id de la lista. Devuelve true si hubo cambio que guardar.
+function marcarProductoHombre(id, marcado){
+  const clave = String(id);
+  const estaba = PRODUCTOS_HOMBRE.includes(clave);
+  if(marcado === estaba) return false;
+  PRODUCTOS_HOMBRE = marcado
+    ? [...PRODUCTOS_HOMBRE, clave]
+    : PRODUCTOS_HOMBRE.filter(x => x !== clave);
+  return true;
+}
+
 function slugify(nombre){
   let base = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'categoria';
   let id = base, n = 2;
@@ -1000,10 +1040,34 @@ function toggleSize(s){
 // Al elegir categoria en un producto NUEVO, marca las tallas que suelen venderse
 // en esa linea (hombre 38-44, mujer 35-40). En productos ya creados no toca nada.
 function aplicarTallasDeCategoria(){
+  actualizarAvisoHombre();
   if(editingId !== null) return;
   const cat = document.getElementById('fCategoria').value;
-  selectedSizes = [...(TALLAS_POR_TRATO[tratoDe(cat)] || TALLAS_DEFAULT)];
+  const trato = esteProductoEsDeHombre() ? 'm' : tratoDe(cat);
+  selectedSizes = [...(TALLAS_POR_TRATO[trato] || TALLAS_DEFAULT)];
   renderSizesEditor();
+}
+
+// Un producto es de hombre si su categoria entera lo es, o si lo marcaste aqui
+function esteProductoEsDeHombre(){
+  const cat = document.getElementById('fCategoria').value;
+  return tratoDe(cat) === 'm' || document.getElementById('fEsHombre').checked;
+}
+
+// Cuando la categoria entera ya es de hombre, la casilla sobra: se marca sola
+// y se bloquea para que no parezca que hace falta tocarla.
+function actualizarAvisoHombre(){
+  const cat = document.getElementById('fCategoria').value;
+  const chk = document.getElementById('fEsHombre');
+  const aviso = document.getElementById('avisoHombre');
+  const catEsHombre = tratoDe(cat) === 'm';
+  chk.disabled = catEsHombre;
+  if(catEsHombre){
+    chk.checked = true;
+    aviso.textContent = 'La categoría “' + (CATEGORIAS[cat] || cat) + '” ya es de hombre, así que este modelo lo es también.';
+  } else {
+    aviso.textContent = 'Marca esto y solo este modelo saldrá en azul con “¡Lo quiero!”, aunque esté en una categoría de mujer.';
+  }
 }
 
 function renderSizesEditor(){
@@ -1058,12 +1122,26 @@ async function saveProduct(){
       });
     } else {
       res = await fetch(`${SUPABASE_URL}/rest/v1/productos_tienda`, {
-        method: 'POST', headers: authHeaders(), body: JSON.stringify(body)
+        method: 'POST',
+        headers: { ...authHeaders(), 'Prefer': 'return=representation' },
+        body: JSON.stringify(body)
       });
     }
     if(!res.ok){
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || 'Error al guardar');
+    }
+    // Guarda (o quita) la marca de "modelo de hombre" para este producto
+    let idGuardado = editingId;
+    if(!idGuardado){
+      const creado = await res.json().catch(() => null);
+      idGuardado = Array.isArray(creado) ? creado[0]?.id : creado?.id;
+    }
+    const catEsHombre = tratoDe(categoria) === 'm';
+    const marcado = !catEsHombre && document.getElementById('fEsHombre').checked;
+    if(idGuardado && marcarProductoHombre(idGuardado, marcado)){
+      try { await saveConfig('productos_hombre', JSON.stringify(PRODUCTOS_HOMBRE)); }
+      catch(e){ showToast('⚠️ El producto se guardó, pero no la marca de hombre'); }
     }
     showToast(editingId ? '✅ Producto actualizado' : '✅ Producto creado');
     resetForm();
@@ -1092,7 +1170,9 @@ function resetForm(){
   document.getElementById('fCaract').value = '';
   colorRows = [];
   addColorRow();
-  selectedSizes = [...(TALLAS_POR_TRATO[tratoDe(document.getElementById('fCategoria').value)] || TALLAS_DEFAULT)];
+  document.getElementById('fEsHombre').checked = false;
+  actualizarAvisoHombre();
+  selectedSizes = [...(TALLAS_POR_TRATO[esteProductoEsDeHombre() ? 'm' : tratoDe(document.getElementById('fCategoria').value)] || TALLAS_DEFAULT)];
   renderSizesEditor();
 }
 
@@ -1162,7 +1242,7 @@ function renderList(){
         ${img ? `<img src="${img.img}" alt="">` : `<div class="noimg">👡</div>`}
         <div class="pitem-info">
           <div class="pitem-name">${p.nombre} ${p.activo ? '' : '(oculto)'}</div>
-          <div class="pitem-meta">${p.modelo} · ${CATEGORIAS[p.categoria] || p.categoria} · ${(p.colores||[]).length} color(es) · Tallas: ${(Array.isArray(p.tallas) && p.tallas.length) ? p.tallas.join(', ') : '35–40 (por defecto)'}</div>
+          <div class="pitem-meta">${(tratoDe(p.categoria) === 'm' || esProductoHombre(p.id)) ? '<span class="pitem-hombre">👨 Hombre</span> · ' : ''}${p.modelo} · ${CATEGORIAS[p.categoria] || p.categoria} · ${(p.colores||[]).length} color(es) · Tallas: ${(Array.isArray(p.tallas) && p.tallas.length) ? p.tallas.join(', ') : '35–40 (por defecto)'}</div>
         </div>
         <div class="pitem-price">$${parseFloat(p.precio).toFixed(2)}</div>
         <div class="pitem-actions">
@@ -1189,6 +1269,8 @@ function editProduct(id){
   colorRows = (p.colores || []).map(c => ({ nombre: c.nombre, img: c.img, hex: c.hex }));
   if(!colorRows.length) addColorRow();
   renderColorRows();
+  document.getElementById('fEsHombre').checked = esProductoHombre(p.id);
+  actualizarAvisoHombre();
   selectedSizes = (Array.isArray(p.tallas) && p.tallas.length) ? [...p.tallas] : [...TALLAS_DEFAULT];
   renderSizesEditor();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1215,6 +1297,10 @@ async function deleteProduct(id, nombre){
       method: 'DELETE', headers: authHeaders()
     });
     if(!res.ok) throw new Error('Error');
+    // Que no quede el id colgando en la lista de modelos de hombre
+    if(marcarProductoHombre(id, false)){
+      try { await saveConfig('productos_hombre', JSON.stringify(PRODUCTOS_HOMBRE)); } catch(e){}
+    }
     showToast('🗑 Producto eliminado');
     loadProducts();
   } catch(err){
