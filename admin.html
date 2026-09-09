@@ -53,6 +53,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 .cat-nombre{flex:1;font-size:.89rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cat-cuenta{font-size:.74rem;color:var(--text-muted);white-space:nowrap;}
 .cat-cuenta.sin{color:var(--red);font-weight:600;}
+.cat-trato{font-family:'Poppins',sans-serif;font-size:.76rem;padding:5px 6px;border:1.5px solid var(--blue-light);border-radius:9px;background:var(--white);color:var(--text);cursor:pointer;flex-shrink:0;}
 .cat-acciones{display:flex;gap:6px;flex-shrink:0;}
 @media(max-width:560px){.cat-cuenta{display:none;}}
 .section-title{font-size:1.2rem;font-weight:700;margin:28px 0 16px;color:var(--blue);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
@@ -199,7 +200,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
       </div>
       <div class="field">
         <label>Categoría *</label>
-        <select id="fCategoria"></select>
+        <select id="fCategoria" onchange="aplicarTallasDeCategoria()"></select>
       </div>
       <div class="field">
         <label>Precio ($) *</label>
@@ -265,8 +266,23 @@ function rebuildCatMap(){
 }
 rebuildCatMap();
 
-const TALLAS_OPCIONES = [34,35,36,37,38,39,40,41,42];
+const TALLAS_OPCIONES = [34,35,36,37,38,39,40,41,42,43,44,45];
 const TALLAS_DEFAULT = [35,36,37,38,39,40];
+// Tallas que se marcan solas segun el trato de la categoria elegida
+const TALLAS_POR_TRATO = {
+  f: [35,36,37,38,39,40],
+  m: [38,39,40,41,42,43,44],
+  n: [35,36,37,38,39,40]
+};
+const TRATOS = [
+  { id: 'f', etiqueta: '👩 Mujer' },
+  { id: 'm', etiqueta: '👨 Hombre' },
+  { id: 'n', etiqueta: '⚪ Neutro' }
+];
+function tratoDe(catId){
+  const c = categorias.find(x => x.id === catId);
+  return (c && c.trato) || 'f';
+}
 
 const TAG_COLORS = [
   { nombre: 'Dorado', hex: '#D4A017' },
@@ -274,7 +290,9 @@ const TAG_COLORS = [
   { nombre: 'Rosa',   hex: '#f45e94' },
   { nombre: 'Negro',  hex: '#1a1a2e' },
   { nombre: 'Rojo',   hex: '#ef4444' },
-  { nombre: 'Lila',   hex: '#A78BFA' }
+  { nombre: 'Lila',   hex: '#A78BFA' },
+  { nombre: 'Café',   hex: '#7B4B2A' },
+  { nombre: 'Blanco', hex: '#F3F0EC' }
 ];
 
 let session = null;
@@ -741,12 +759,36 @@ function renderCats(){
       </span>
       <span class="cat-nombre">${c.nombre}</span>
       <span class="cat-cuenta ${n ? '' : 'sin'}">${texto}</span>
+      <select class="cat-trato" onchange="setTrato(${i}, this.value)" title="Define el botón, el color y las tallas por defecto de esta categoría" aria-label="Trato de ${c.nombre}">
+        ${TRATOS.map(t => `<option value="${t.id}" ${(c.trato || 'f') === t.id ? 'selected' : ''}>${t.etiqueta}</option>`).join('')}
+      </select>
       <span class="cat-acciones">
         <button class="mini-btn mini-rose" onclick="renameCat(${i})" title="Renombrar">✏️</button>
         <button class="mini-btn mini-red" onclick="deleteCat(${i})" title="Eliminar">✕</button>
       </span>
     </div>`;
   }).join('');
+}
+
+// Cambia el trato de una categoria (mujer / hombre / neutro) y guarda enseguida.
+// De esto dependen el texto del boton, el color de acento y las tallas sugeridas.
+async function setTrato(i, valor){
+  const c = categorias[i];
+  if(!c) return;
+  const anterior = c.trato || 'f';
+  if(anterior === valor) return;
+  c.trato = valor;
+  try {
+    await saveCats();
+    const nombre = (TRATOS.find(t => t.id === valor) || {}).etiqueta || valor;
+    showToast('✅ ' + c.nombre + ': ' + nombre);
+    // Si estas creando un producto nuevo de esa categoria, refresca las tallas
+    if(editingId === null && document.getElementById('fCategoria').value === c.id) aplicarTallasDeCategoria();
+  } catch(err){
+    c.trato = anterior;
+    renderCats();
+    showToast('❌ ' + err.message);
+  }
 }
 
 // Mueve una categoria y guarda enseguida. Si falla, se deshace el cambio.
@@ -955,6 +997,15 @@ function toggleSize(s){
   renderSizesEditor();
 }
 
+// Al elegir categoria en un producto NUEVO, marca las tallas que suelen venderse
+// en esa linea (hombre 38-44, mujer 35-40). En productos ya creados no toca nada.
+function aplicarTallasDeCategoria(){
+  if(editingId !== null) return;
+  const cat = document.getElementById('fCategoria').value;
+  selectedSizes = [...(TALLAS_POR_TRATO[tratoDe(cat)] || TALLAS_DEFAULT)];
+  renderSizesEditor();
+}
+
 function renderSizesEditor(){
   document.getElementById('sizesEditor').innerHTML = TALLAS_OPCIONES.map(s =>
     `<div class="size-chip ${selectedSizes.includes(s) ? 'on' : ''}" onclick="toggleSize(${s})">${s}</div>`
@@ -1041,7 +1092,7 @@ function resetForm(){
   document.getElementById('fCaract').value = '';
   colorRows = [];
   addColorRow();
-  selectedSizes = [...TALLAS_DEFAULT];
+  selectedSizes = [...(TALLAS_POR_TRATO[tratoDe(document.getElementById('fCategoria').value)] || TALLAS_DEFAULT)];
   renderSizesEditor();
 }
 

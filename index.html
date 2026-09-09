@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hawaki – A tus pies 🌸</title>
-<meta name="description" content="Sandalias y zapatillas que salen del amor. Plataformas, sandalias, tacones, yute y más.">
+<meta name="description" content="Sandalias y zapatillas que salen del amor. Plataformas, yute, ortopédicas y sandalias de hombre. Envíos a todo el Ecuador desde Guayaquil.">
 <meta name="theme-color" id="metaTheme" content="#f45e94">
 <script>
 // Se ejecuta ANTES de pintar la página: si el visitante eligió modo noche en
@@ -29,7 +29,7 @@
 <link rel="apple-touch-icon" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&family=Slackside+One&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:light;--rose:#E8607A;--rose-light:#F9D6DD;--rose-dark:#C2415A;--blue:#3B6FA0;--blue-light:#D0E4F7;--cream:#FFF8F9;--text:#1a1a2e;--text-muted:#6b7280;--white:#ffffff;--shadow:0 4px 24px rgba(59,111,160,.10);--shadow-h:0 8px 32px rgba(232,96,122,.20);
+:root{color-scheme:light;--rose:#E8607A;--rose-light:#F9D6DD;--rose-dark:#C2415A;--blue:#3B6FA0;--blue-light:#D0E4F7;--blue-strong:#2C5680;--blue-txt:#3B6FA0;--cream:#FFF8F9;--text:#1a1a2e;--text-muted:#6b7280;--white:#ffffff;--shadow:0 4px 24px rgba(59,111,160,.10);--shadow-h:0 8px 32px rgba(232,96,122,.20);
 /* Tokens de superficie: --white se queda como color de marca (texto sobre
    degradados rosa), por eso los FONDOS usan --surface y no --white. */
 --surface:#ffffff;--surface-2:#ffffff;--border:transparent;--header-bg:#f45e94;--photo-bed:#f5f5f5;--velo:rgba(26,26,46,.58);--sombra-menu:0 8px 32px rgba(59,111,160,.18);--footer-bg:#1a1a2e;--rose-grad-end:#C2415A;--blue-text:#3B6FA0;--foto-brillo:1;--cta-bg:rgba(255,255,255,.94);--arrow-bg:rgba(255,255,255,.88);--arrow-bg-movil:rgba(255,255,255,.6);--fade-from:rgba(255,248,249,0);--btn-off-bg:#d1d5db;--btn-off-text:#ffffff;--chip-border:#ddd;--chip-text:#999;--input-bg:#ffffff;--border-linea:#e5e7eb;}
@@ -131,6 +131,13 @@ header{background:var(--header-bg);position:sticky;top:0;z-index:100;box-shadow:
 .card-price{font-size:1.2rem;font-weight:700;color:var(--blue-text);margin-bottom:12px;}
 .card-cta{width:100%;background:linear-gradient(90deg,var(--rose),var(--rose-dark));color:var(--white);border:none;border-radius:10px;padding:10px;font-family:'Poppins',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:opacity .2s;}
 .card-cta:hover{opacity:.88;}
+/* Categorías masculinas: mismo diseño, acento azul (el azul ya es de la marca) */
+.product-card.masc .card-model{color:var(--blue-txt);}
+.product-card.masc .card-cta{background:linear-gradient(90deg,var(--blue),var(--blue-strong));}
+.product-card.masc .product-badge{background:var(--blue)!important;}
+.category-section.masc .category-label{border-left-color:var(--blue);}
+.category-section.masc .swipe-hint{color:var(--blue-txt);background:var(--blue-light);}
+.pmodal.masc .pm-add-btn{background:linear-gradient(90deg,var(--blue),var(--blue-strong));}
 .loading-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
 .loading-state .spinner{width:40px;height:40px;border:4px solid var(--rose-light);border-top-color:var(--rose);border-radius:50%;margin:0 auto 16px;animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -327,7 +334,7 @@ footer strong{color:var(--rose);}
   --cream:#171219;--text:#F2E9EE;--text-muted:#B3A3AC;
   --surface:#211A22;--surface-2:#2C2430;--border:rgba(255,255,255,.10);
   --header-bg:#8E3358;--photo-bed:#EDE6EA;--velo:rgba(0,0,0,.72);
-  --rose-light:#3A2029;--rose-dark:#F0A0AE;--blue-light:#24374F;
+  --rose-light:#3A2029;--rose-dark:#F0A0AE;--blue-light:#24374F;--blue-strong:#4A80B5;--blue-txt:#9CC4EA;
   --shadow:0 4px 24px rgba(0,0,0,.5);--shadow-h:0 8px 32px rgba(0,0,0,.62);
   --sombra-menu:0 12px 34px rgba(0,0,0,.55);
   --footer-bg:#0E0A10;--rose-grad-end:#8E3358;--blue-text:#9CC4EA;--foto-brillo:.9;--cta-bg:rgba(26,20,24,.88);--arrow-bg:rgba(44,36,48,.92);--arrow-bg-movil:rgba(44,36,48,.8);--fade-from:rgba(23,18,25,0);--btn-off-bg:#3A3340;--btn-off-text:#A99FA6;--chip-border:rgba(255,255,255,.2);--chip-text:#B3A3AC;--input-bg:#2C2430;--border-linea:rgba(255,255,255,.14);
@@ -449,7 +456,7 @@ footer strong{color:var(--rose);}
     <button class="close-btn" onclick="toggleCart()">✕</button>
   </div>
   <div class="cart-items" id="cartItems">
-    <div class="cart-empty"><span>🛍️</span>Tu carrito está vacío.<br>Agrega tus sandalias favoritas.</div>
+    <div class="cart-empty"><span>🛍️</span>Tu carrito está vacío.<br>Agrega tus modelos favoritos.</div>
   </div>
   <div class="cart-footer">
     <div class="cart-total"><span>Total:</span><span id="cartTotal">$0.00</span></div>
@@ -514,6 +521,11 @@ let CATS = [
   { id: 'ortopedicas', nombre: 'Ortopédicas Comfort Altas' }
 ];
 let CATEGORIAS = {}; // id -> nombre
+// Trato de cada categoría: 'f' femenino (por defecto), 'm' masculino, 'n' neutro.
+// De aquí salen el texto del botón y el color de acento, sin tocar nada más.
+let CAT_TRATO = {};
+function esMasculina(cat){ return CAT_TRATO[cat] === 'm'; }
+function textoQuiero(cat){ return CAT_TRATO[cat] === 'f' || !CAT_TRATO[cat] ? '¡La quiero! →' : '¡Lo quiero! →'; }
 
 async function loadCategorias(){
   try {
@@ -526,7 +538,8 @@ async function loadCategorias(){
     }
   } catch(err){ console.log('Categorias:', err); }
   CATEGORIAS = {};
-  CATS.forEach(c => { CATEGORIAS[c.id] = c.nombre; });
+  CAT_TRATO = {};
+  CATS.forEach(c => { CATEGORIAS[c.id] = c.nombre; CAT_TRATO[c.id] = c.trato || 'f'; });
   renderCatTabs();
 }
 
@@ -649,7 +662,7 @@ function renderProducts(){
     const list = PRODUCTS.filter(p => p.category === cat);
     if(!list.length) return '';
     return `
-      <div class="category-section visible at-start" id="cat-${cat}">
+      <div class="category-section visible at-start ${esMasculina(cat) ? 'masc' : ''}" id="cat-${cat}">
         <div class="category-head">
           <div class="category-label">${CATEGORIAS[cat]}</div>
           <span class="swipe-hint">Desliza para ver más <i>→</i></span>
@@ -697,7 +710,7 @@ function cardHTML(p){
     return `<div class="color-dot ${on ? 'active' : ''}" style="background:${c.img ? '#888' : (c.hex || '#ccc')};"></div>`;
   }).join('');
   return `
-    <div class="product-card" onclick="openModal(${p.id})">
+    <div class="product-card ${esMasculina(p.category) ? 'masc' : ''}" onclick="openModal(${p.id})">
       <div class="card-img-wrap">
         ${mainImg
           ? `<img id="card-img-${p.id}" src="${mainImg.img}" alt="${p.name}" loading="lazy">`
@@ -713,7 +726,7 @@ function cardHTML(p){
         <div class="card-model">${p.model}</div>
         <div class="card-name">${p.name}</div>
         <div class="card-price">$${p.price.toFixed(2)}</div>
-        <button class="card-cta" onclick="event.stopPropagation();openModal(${p.id})">¡La quiero! →</button>
+        <button class="card-cta" onclick="event.stopPropagation();openModal(${p.id})">${textoQuiero(p.category)}</button>
       </div>
     </div>`;
 }
@@ -740,6 +753,7 @@ function openModal(id){
   selColor = Math.max(0, curP.colors.findIndex(c => c.img));
   selSize = null;
   document.getElementById('pm-cat').textContent = CATEGORIAS[curP.category] || curP.category;
+  document.getElementById('pmodal').classList.toggle('masc', esMasculina(curP.category));
   document.getElementById('pm-name').textContent = curP.name;
   document.getElementById('pm-price').textContent = '$' + curP.price.toFixed(2);
   document.getElementById('pm-features').innerHTML = curP.features.map(f => `<div class="pm-feature">${f}</div>`).join('');
@@ -870,7 +884,7 @@ function updateCartUI(){
   document.getElementById('cartTotal').textContent = '$' + total.toFixed(2);
   const el = document.getElementById('cartItems');
   if(!cart.length){
-    el.innerHTML = '<div class="cart-empty"><span>🛍️</span>Tu carrito está vacío.<br>Agrega tus sandalias favoritas.</div>';
+    el.innerHTML = '<div class="cart-empty"><span>🛍️</span>Tu carrito está vacío.<br>Agrega tus modelos favoritos.</div>';
     return;
   }
   el.innerHTML = cart.map(item => `
@@ -912,7 +926,7 @@ function sendWA(){
   if(!name || !city || !addr){ showToast('Por favor completa todos tus datos 📝'); return; }
   const lines = cart.map(i => `• Modelo ${i.model} color ${i.color}, Talla ${i.size} x${i.qty}`).join('\n');
   const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
-  const msg = `¡Hola! Soy ${name} y quisiera adquirir:\n\n${lines}\n\nTotal: $${total.toFixed(2)}\nCon envío a ${city}\nDirección: ${addr}\n\n¡Quedo atenta a su confirmación! 💗`;
+  const msg = `¡Hola! Soy ${name} y quisiera adquirir:\n\n${lines}\n\nTotal: $${total.toFixed(2)}\nCon envío a ${city}\nDirección: ${addr}\n\n¡Quedo pendiente de su confirmación! 💗`;
   window.open(`https://wa.me/593990788739?text=${encodeURIComponent(msg)}`, '_blank');
   closeCheckout();
   // El pedido ya salió: vaciamos para que al volver no encuentre lo mismo
