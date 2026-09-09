@@ -75,6 +75,7 @@ body{font-family:'Poppins',sans-serif;background:var(--cream);color:var(--text);
 .color-thumb-empty{width:46px;height:46px;border-radius:8px;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#bbb;}
 .mini-btn{border:none;border-radius:8px;padding:8px 12px;font-family:'Poppins',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;}
 .mini-rose{background:var(--rose-light);color:var(--rose-dark);}
+.mini-blue{background:var(--blue-light);color:var(--blue);}
 .mini-red{background:#fee2e2;color:var(--red);}
 .upload-status{font-size:.72rem;color:var(--green);font-weight:600;}
 
@@ -744,6 +745,33 @@ function saveCats(){
   return saveConfig('categorias', JSON.stringify(categorias));
 }
 
+// ══════════ ENLACE DIRECTO A UN MODELO ══════════
+// Copia el enlace de un producto para mandarselo a una clienta por WhatsApp.
+// Al abrirlo, la tienda muestra esa ficha ya abierta: no tiene que buscarla.
+const TIENDA_URL = 'https://hawakiatuspies.com/';
+
+function copiarEnlace(id, nombre){
+  const url = TIENDA_URL + '?p=' + id;
+  copiarTexto(url, '🔗 Enlace de ' + nombre + ' copiado');
+}
+
+async function copiarTexto(texto, aviso){
+  try {
+    await navigator.clipboard.writeText(texto);
+    showToast(aviso);
+  } catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showToast(aviso); }
+    catch(e2){ showToast('No se pudo copiar. El enlace es: ' + texto); }
+    document.body.removeChild(ta);
+  }
+}
+
 // ══════════ MODELOS DE HOMBRE SUELTOS ══════════
 // Se guardan como una lista de ids en config_tienda, igual que las categorias,
 // para no tener que agregar una columna nueva a la tabla de productos.
@@ -1247,6 +1275,7 @@ function renderList(){
         <div class="pitem-price">$${parseFloat(p.precio).toFixed(2)}</div>
         <div class="pitem-actions">
           <button class="mini-btn mini-rose" onclick="editProduct(${p.id})">✏️ Editar</button>
+          <button class="mini-btn mini-blue" onclick="copiarEnlace(${p.id}, '${p.nombre.replace(/'/g, "\\'")}')" title="Copiar el enlace de este modelo para enviarlo por WhatsApp">🔗 Enlace</button>
           <button class="mini-btn ${p.activo ? 'mini-rose' : 'mini-rose'}" onclick="toggleActive(${p.id}, ${!p.activo})">${p.activo ? '🙈 Ocultar' : '👁 Mostrar'}</button>
           <button class="mini-btn mini-red" onclick="deleteProduct(${p.id}, '${p.nombre.replace(/'/g, "\\'")}')">🗑</button>
         </div>
