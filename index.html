@@ -107,10 +107,15 @@ header{background:var(--header-bg);position:sticky;top:0;z-index:100;box-shadow:
 .chev{font-size:1.15rem;color:var(--rose);font-weight:700;line-height:1;}
 .category-section.masc .chev{color:var(--blue);}
 /* Colección abierta: se ven todos los modelos en cuadrícula, sin deslizar */
-.volver{display:none;background:none;border:none;color:var(--text-muted);font-family:'Poppins',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:6px;transition:color .2s;}
-.volver:hover{color:var(--rose);}
+/* Misma píldora y misma flecha animada que "Ver los N", pero hacia atrás */
+.volver{display:none;align-items:center;gap:6px;background:var(--rose-light);color:var(--rose-dark);border:none;border-radius:20px;padding:6px 13px;font-family:'Poppins',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;margin-bottom:12px;transition:background .2s,color .2s;}
+.volver:hover{background:var(--rose);color:var(--white);}
+.volver i{font-style:normal;display:inline-block;animation:nudge-izq 1.3s ease-in-out infinite;}
+@keyframes nudge-izq{0%,100%{transform:translateX(0)}50%{transform:translateX(-5px)}}
+.category-section.masc .volver{background:var(--blue-light);color:var(--blue-txt);}
+.category-section.masc .volver:hover{background:var(--blue);color:var(--white);}
 .cat-count{display:none;font-size:.75rem;font-weight:600;color:var(--text-muted);white-space:nowrap;flex-shrink:0;}
-.category-section.abierta .volver{display:inline-block;}
+.category-section.abierta .volver{display:inline-flex;}
 .category-section.abierta .cat-count{display:inline;}
 .category-section.abierta .chev{display:none;}
 .category-section.abierta .category-label{cursor:default;}
@@ -736,7 +741,7 @@ function renderProducts(){
     if(!list.length) return '';
     return `
       <div class="category-section visible at-start ${esMasculina(cat) ? 'masc' : ''}" id="cat-${cat}">
-        <button class="volver" onclick="showCat('todas')">← Todas las colecciones</button>
+        <button class="volver" onclick="showCat('todas')"><i>←</i> Todas las colecciones</button>
         <div class="category-head">
           <button class="category-label" onclick="showCat('${cat}')" title="Ver todos los modelos de ${CATEGORIAS[cat]}">${CATEGORIAS[cat]}<span class="chev">›</span></button>
           <span class="cat-count">${list.length} ${list.length === 1 ? 'modelo' : 'modelos'}</span>
