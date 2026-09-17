@@ -93,7 +93,21 @@ header{background:var(--header-bg);position:sticky;top:0;z-index:100;box-shadow:
 .category-section{display:none;}
 .category-section.visible{display:block;}
 .category-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;margin-top:8px;}
-.category-label{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--blue-text);border-left:4px solid var(--rose);padding-left:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.category-label{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--blue-text);border:none;border-left:4px solid var(--rose);background:none;padding:0 0 0 14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;transition:opacity .2s;}
+.category-label:hover{opacity:.7;}
+.chev{font-size:1.15rem;color:var(--rose);font-weight:700;line-height:1;}
+.category-section.masc .chev{color:var(--blue);}
+/* Colección abierta: se ven todos los modelos en cuadrícula, sin deslizar */
+.volver{display:none;background:none;border:none;color:var(--text-muted);font-family:'Poppins',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:6px;transition:color .2s;}
+.volver:hover{color:var(--rose);}
+.cat-count{display:none;font-size:.75rem;font-weight:600;color:var(--text-muted);white-space:nowrap;flex-shrink:0;}
+.category-section.abierta .volver{display:inline-block;}
+.category-section.abierta .cat-count{display:inline;}
+.category-section.abierta .chev{display:none;}
+.category-section.abierta .category-label{cursor:default;}
+.category-section.abierta .swipe-hint,.category-section.abierta .row-arrow,.category-section.abierta .row-fade{display:none!important;}
+.category-section.abierta .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));overflow:visible;}
+.category-section.abierta .product-card{flex:none;width:auto;}
 .swipe-hint{display:none;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;font-size:.75rem;font-weight:600;color:var(--rose-dark);background:var(--rose-light);border-radius:20px;padding:5px 12px;transition:opacity .3s;}
 .category-section.scrollable .swipe-hint{display:flex;}
 .category-section.at-end .swipe-hint{opacity:0;}
@@ -291,6 +305,7 @@ footer strong{color:var(--rose);}
   .products-grid{gap:10px;padding:6px 0 12px;}
   .product-card{flex:0 0 45%;}
   .grid-resultados{grid-template-columns:repeat(2,1fr);gap:10px;padding:6px 0 12px;}
+  .category-section.abierta .products-grid{grid-template-columns:repeat(2,1fr);}
   .category-head{margin-bottom:10px;gap:8px;}
   .swipe-hint{font-size:.68rem;padding:4px 10px;gap:4px;}
   .row-fade{width:34px;bottom:12px;}
@@ -696,8 +711,10 @@ function renderProducts(){
     if(!list.length) return '';
     return `
       <div class="category-section visible at-start ${esMasculina(cat) ? 'masc' : ''}" id="cat-${cat}">
+        <button class="volver" onclick="showCat('todas')">← Todas las colecciones</button>
         <div class="category-head">
-          <div class="category-label">${CATEGORIAS[cat]}</div>
+          <button class="category-label" onclick="showCat('${cat}')" title="Ver todos los modelos de ${CATEGORIAS[cat]}">${CATEGORIAS[cat]}<span class="chev">›</span></button>
+          <span class="cat-count">${list.length} ${list.length === 1 ? 'modelo' : 'modelos'}</span>
           <span class="swipe-hint">Desliza para ver más <i>→</i></span>
         </div>
         <div class="row-wrap">
@@ -1138,13 +1155,22 @@ function restaurarCatalogo(){
   const activa = document.querySelector('#catRow .tab-btn.active');
   const idx = activa ? [...document.querySelectorAll('#catRow .tab-btn')].indexOf(activa) : 0;
   const cat = idx <= 0 ? 'todas' : (CATS[idx - 1]?.id || 'todas');
+  aplicarVista(cat);
+}
+
+// ══════════ CATEGORÍAS ══════════
+// 'todas' muestra cada colección como una fila que se desliza. Entrar a una
+// colección la abre en cuadrícula, con todos sus modelos a la vista de una vez.
+function aplicarVista(cat){
+  const todas = cat === 'todas';
   document.querySelectorAll('.category-section').forEach(s => {
-    s.classList.toggle('visible', cat === 'todas' || s.id === 'cat-' + cat);
+    const esta = s.id === 'cat-' + cat;
+    s.classList.toggle('visible', todas || esta);
+    s.classList.toggle('abierta', !todas && esta);
   });
   initRows();
 }
 
-// ══════════ CATEGORÍAS ══════════
 function showCat(cat, btn){
   // Elegir una categoría cancela la búsqueda en curso
   const qi = document.getElementById('qBuscar');
@@ -1160,10 +1186,7 @@ function showCat(cat, btn){
     if(t.includes(target) || (cat === 'todas' && t.includes('todas'))) b.classList.add('active');
   });
   if(btn) btn.classList.add('active');
-  document.querySelectorAll('.category-section').forEach(s => {
-    s.classList.toggle('visible', cat === 'todas' || s.id === 'cat-' + cat);
-  });
-  initRows();
+  aplicarVista(cat);
   document.querySelector('.products-wrap').scrollIntoView({ behavior: 'smooth' });
 }
 
