@@ -6,6 +6,15 @@
 <title>Hawaki – A tus pies 🌸</title>
 <meta name="description" content="Sandalias y zapatillas que salen del amor. Plataformas, yute, ortopédicas y sandalias de hombre. Envíos a todo el Ecuador desde Guayaquil.">
 <meta name="theme-color" id="metaTheme" content="#f45e94">
+<!-- Vista previa al compartir el enlace en Facebook, Instagram o WhatsApp -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hawaki">
+<meta property="og:title" content="Hawaki – A tus pies 🌸">
+<meta property="og:description" content="Sandalias y zapatillas que salen del amor. Plataformas, yute, ortopédicas y sandalias de hombre. Envíos a todo el Ecuador desde Guayaquil.">
+<meta property="og:url" content="https://hawakiatuspies.com/">
+<meta property="og:image" content="https://hawakiatuspies.com/favicon.png">
+<meta property="og:locale" content="es_EC">
+<meta name="twitter:card" content="summary_large_image">
 <script>
 // Se ejecuta ANTES de pintar la página: si el visitante eligió modo noche en
 // esta misma visita, sin esto vería un destello blanco antes de aplicarse.
@@ -690,7 +699,8 @@ async function loadProducts(){
     }));
     renderProducts();
     revalidarCarrito();   // ya tenemos el catálogo real: comprobamos el carrito guardado
-    abrirProductoDelEnlace();   // si llegó por un enlace directo, le abrimos ese modelo
+    abrirColeccionDelEnlace();  // ?coleccion=corcho abre esa colección completa
+    abrirProductoDelEnlace();   // ?p=12 abre la ficha de ese modelo
   } catch(err){
     document.getElementById('productsWrap').innerHTML = `
       <div class="loading-state">
@@ -914,6 +924,31 @@ function closePModal(){
 // Formatos aceptados: ?p=12 (id, el que generamos) y ?modelo=boston (por si lo escribes a mano)
 function enlaceProducto(id){
   return location.origin + location.pathname + '?p=' + id;
+}
+
+function enlaceColeccion(cat){
+  return location.origin + location.pathname + '?coleccion=' + cat;
+}
+
+// Deja la dirección a la vista reflejando la colección abierta, para que se
+// pueda copiar del navegador y usarla en un anuncio.
+function actualizarEnlaceColeccion(cat){
+  const destino = cat === 'todas' ? location.pathname : location.pathname + '?coleccion=' + cat;
+  history.replaceState(null, '', destino);
+}
+
+// Abre la colección que venga en el enlace: ?coleccion=corcho (id o nombre)
+function abrirColeccionDelEnlace(){
+  const pedida = new URLSearchParams(location.search).get('coleccion');
+  if(!pedida) return;
+  const buscada = normalizar(pedida);
+  const cat = CATS.find(c => normalizar(c.id) === buscada || normalizar(c.nombre) === buscada);
+  if(!cat){ showToast('Esa colección ya no está disponible 🌸'); return; }
+  if(!PRODUCTS.some(p => p.category === cat.id)){
+    showToast('“' + cat.nombre + '” aún no tiene modelos 🌸'); return;
+  }
+  marcarTabActiva(cat.id);
+  aplicarVista(cat.id);
 }
 
 function abrirProductoDelEnlace(){
@@ -1161,6 +1196,15 @@ function restaurarCatalogo(){
 // ══════════ CATEGORÍAS ══════════
 // 'todas' muestra cada colección como una fila que se desliza. Entrar a una
 // colección la abre en cuadrícula, con todos sus modelos a la vista de una vez.
+function marcarTabActiva(cat){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const t = b.textContent.trim().toLowerCase();
+    const target = cat === 'todas' ? 'todas' : (CATEGORIAS[cat] || '').toLowerCase();
+    if(t.includes(target) || (cat === 'todas' && t.includes('todas'))) b.classList.add('active');
+  });
+}
+
 function aplicarVista(cat){
   const todas = cat === 'todas';
   document.querySelectorAll('.category-section').forEach(s => {
@@ -1179,14 +1223,10 @@ function showCat(cat, btn){
     document.getElementById('buscador').classList.remove('conTexto');
     renderProducts();
   }
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    const t = b.textContent.trim().toLowerCase();
-    const target = cat === 'todas' ? 'todas' : (CATEGORIAS[cat] || '').toLowerCase();
-    if(t.includes(target) || (cat === 'todas' && t.includes('todas'))) b.classList.add('active');
-  });
+  marcarTabActiva(cat);
   if(btn) btn.classList.add('active');
   aplicarVista(cat);
+  actualizarEnlaceColeccion(cat);
   document.querySelector('.products-wrap').scrollIntoView({ behavior: 'smooth' });
 }
 

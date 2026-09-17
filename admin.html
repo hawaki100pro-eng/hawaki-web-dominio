@@ -755,6 +755,12 @@ function copiarEnlace(id, nombre){
   copiarTexto(url, '🔗 Enlace de ' + nombre + ' copiado');
 }
 
+// Enlace de una coleccion entera: abre la tienda con esa coleccion desplegada.
+// Sirve para anuncios ("ve toda la coleccion aqui") y para mandarla por chat.
+function copiarEnlaceColeccion(id, nombre){
+  copiarTexto(TIENDA_URL + '?coleccion=' + id, '🔗 Enlace de la colección ' + nombre + ' copiado');
+}
+
 async function copiarTexto(texto, aviso){
   try {
     await navigator.clipboard.writeText(texto);
@@ -831,6 +837,7 @@ function renderCats(){
         ${TRATOS.map(t => `<option value="${t.id}" ${(c.trato || 'f') === t.id ? 'selected' : ''}>${t.etiqueta}</option>`).join('')}
       </select>
       <span class="cat-acciones">
+        <button class="mini-btn mini-blue" onclick="copiarEnlaceColeccion('${c.id}', '${c.nombre.replace(/'/g, "\\'")}')" title="Copiar el enlace de esta colección (para anuncios o WhatsApp)">🔗</button>
         <button class="mini-btn mini-rose" onclick="renameCat(${i})" title="Renombrar">✏️</button>
         <button class="mini-btn mini-red" onclick="deleteCat(${i})" title="Eliminar">✕</button>
       </span>
