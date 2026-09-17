@@ -117,9 +117,18 @@ header{background:var(--header-bg);position:sticky;top:0;z-index:100;box-shadow:
 .category-section.abierta .swipe-hint,.category-section.abierta .row-arrow,.category-section.abierta .row-fade{display:none!important;}
 .category-section.abierta .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));overflow:visible;}
 .category-section.abierta .product-card{flex:none;width:auto;}
-.swipe-hint{display:none;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;font-size:.75rem;font-weight:600;color:var(--rose-dark);background:var(--rose-light);border-radius:20px;padding:5px 12px;transition:opacity .3s;}
+.swipe-hint{display:none;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;font-size:.75rem;font-weight:600;color:var(--rose-dark);background:var(--rose-light);border:none;border-radius:20px;padding:6px 13px;font-family:'Poppins',sans-serif;cursor:pointer;transition:background .2s,color .2s;}
+.swipe-hint:hover{background:var(--rose);color:var(--white);}
+/* Tarjeta al final de la fila: aparece justo cuando se acaban los modelos */
+.ver-todos-card{flex:0 0 220px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;background:var(--rose-light);border:2px dashed var(--rose);border-radius:20px;cursor:pointer;font-family:'Poppins',sans-serif;padding:20px 16px;transition:background .2s,transform .22s;}
+.ver-todos-card:hover{transform:translateY(-6px);}
+.vt-mas{font-size:1.9rem;font-weight:700;color:var(--rose-dark);line-height:1;}
+.vt-txt{font-size:.82rem;font-weight:600;color:var(--text);text-align:center;line-height:1.35;}
+.vt-ir{font-size:.78rem;font-weight:700;color:var(--rose-dark);}
+.category-section.masc .ver-todos-card{background:var(--blue-light);border-color:var(--blue);}
+.category-section.masc .vt-mas,.category-section.masc .vt-ir{color:var(--blue-txt);}
+.category-section.abierta .ver-todos-card{display:none;}
 .category-section.scrollable .swipe-hint{display:flex;}
-.category-section.at-end .swipe-hint{opacity:0;}
 .swipe-hint i{font-style:normal;display:inline-block;animation:nudge 1.3s ease-in-out infinite;}
 @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
 .row-wrap{position:relative;}
@@ -312,7 +321,8 @@ footer strong{color:var(--rose);}
   .tab-btn{padding:7px 14px;font-size:.75rem;white-space:nowrap;flex-shrink:0;}
   .products-wrap{padding:16px 12px 48px;}
   .products-grid{gap:10px;padding:6px 0 12px;}
-  .product-card{flex:0 0 45%;}
+  .product-card,.ver-todos-card{flex:0 0 45%;}
+  .vt-txt{font-size:.78rem;}
   .grid-resultados{grid-template-columns:repeat(2,1fr);gap:10px;padding:6px 0 12px;}
   .category-section.abierta .products-grid{grid-template-columns:repeat(2,1fr);}
   .category-head{margin-bottom:10px;gap:8px;}
@@ -725,12 +735,18 @@ function renderProducts(){
         <div class="category-head">
           <button class="category-label" onclick="showCat('${cat}')" title="Ver todos los modelos de ${CATEGORIAS[cat]}">${CATEGORIAS[cat]}<span class="chev">›</span></button>
           <span class="cat-count">${list.length} ${list.length === 1 ? 'modelo' : 'modelos'}</span>
-          <span class="swipe-hint">Desliza para ver más <i>→</i></span>
+          <button class="swipe-hint" onclick="showCat('${cat}')">Ver los ${list.length} <i>→</i></button>
         </div>
         <div class="row-wrap">
           <button class="row-arrow left" onclick="rowNav(this,-1)" aria-label="Ver modelos anteriores">‹</button>
           <div class="products-grid" onscroll="rowScroll(this)">
             ${list.map(p => cardHTML(p)).join('')}
+            ${list.length > 2 ? `
+              <button class="ver-todos-card" onclick="showCat('${cat}')">
+                <span class="vt-mas">${list.length}</span>
+                <span class="vt-txt">modelos en<br>${CATEGORIAS[cat]}</span>
+                <span class="vt-ir">Ver todos →</span>
+              </button>` : ''}
           </div>
           <button class="row-arrow right" onclick="rowNav(this,1)" aria-label="Ver más modelos">›</button>
           <div class="row-fade"></div>
