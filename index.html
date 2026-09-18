@@ -6,6 +6,24 @@
 <title>Hawaki – A tus pies 🌸</title>
 <meta name="description" content="Sandalias y zapatillas que salen del amor. Plataformas, yute, ortopédicas y sandalias de hombre. Envíos a todo el Ecuador desde Guayaquil.">
 <meta name="theme-color" id="metaTheme" content="#f45e94">
+
+<!-- ══════════ PÍXEL DE META (Facebook / Instagram) ══════════
+     Conjunto de datos "Hawaki web" · ID 2348760152554862
+     Mide visitas y acciones de las clientas para poder hacer anuncios
+     dirigidos a gente parecida a quien ya se interesó en la tienda. -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2348760152554862');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt=""
+src="https://www.facebook.com/tr?id=2348760152554862&ev=PageView&noscript=1"></noscript>
+<!-- ══════════ FIN PÍXEL DE META ══════════ -->
+
 <!-- Vista previa al compartir el enlace en Facebook, Instagram o WhatsApp -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hawaki">
@@ -561,11 +579,20 @@ footer strong{color:var(--rose);}
       <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
     </a>
   </div>
+  <div style="opacity:.45;font-size:.68rem;max-width:520px;margin:10px auto 0;line-height:1.5;">Usamos cookies de Meta (Facebook e Instagram) para medir las visitas y mostrar nuestros anuncios. Puedes desactivarlas desde la configuración de tu navegador.</div>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Cambiar a modo noche" title="Modo noche"><span id="themeIcon">🌙</span><span id="themeLabel">Modo noche</span></button>
   <a href="admin.html" style="opacity:.25;font-size:.65rem;color:inherit;text-decoration:none;margin-top:6px;display:inline-block;">·</a>
 </footer>
 
 <script>
+// ══════════ EVENTOS AL PÍXEL DE META ══════════
+// Envuelto en try/catch a propósito: si la clienta usa un bloqueador de
+// anuncios, fbq no existe. La tienda debe seguir funcionando igual.
+function metaEvento(nombre, datos){
+  try { if(typeof fbq === 'function') fbq('track', nombre, datos || {}); }
+  catch(e){ /* medir nunca debe romper la compra */ }
+}
+
 // ══════════ CONFIGURACIÓN SUPABASE ══════════
 const SUPABASE_URL = 'https://vbezdulxpmwrhppomlru.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiZXpkdWx4cG13cmhwcG9tbHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MDYyNzQsImV4cCI6MjA5ODM4MjI3NH0.LNC6GUlHfS7lYhASHqgBBeIMrKQ1lhwEx9riUInNVtw';
@@ -850,6 +877,14 @@ function openModal(id){
   renderSimilares();
   document.getElementById('pmodalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  metaEvento('ViewContent', {
+    content_name: curP.name,
+    content_ids: [String(curP.id)],
+    content_type: 'product',
+    content_category: CATEGORIAS[curP.category] || curP.category,
+    value: curP.price,
+    currency: 'USD'
+  });
 }
 
 // ══════════ TAMBIÉN TE PUEDE GUSTAR ══════════
@@ -935,6 +970,13 @@ function addFromModal(){
   else { cart.push({ key, id: curP.id, name: curP.name, model: curP.model, price: curP.price, color: c.name, img: c.img, size: selSize, qty: 1 }); }
   updateCartUI();
   showToast(`${curP.name} · ${c.name} T${selSize} agregado 🎉`);
+  metaEvento('AddToCart', {
+    content_name: curP.name,
+    content_ids: [String(curP.id)],
+    content_type: 'product',
+    value: curP.price,
+    currency: 'USD'
+  });
   closePModal();
   openCartDrawer();
 }
@@ -1095,6 +1137,13 @@ function openCheckout(){
     <div class="order-line" style="border-top:1px solid var(--border-linea);margin-top:8px;padding-top:8px;"><strong>Total</strong><strong>$${total.toFixed(2)}</strong></div>
     <div style="margin-top:10px;font-size:.78rem;color:var(--rose-dark);background:var(--rose-light);border-radius:10px;padding:8px 12px;text-align:center;">💕 Envíos por Servientrega a cargo del comprador 📦✨</div>`;
   document.getElementById('checkoutModal').classList.add('open');
+  metaEvento('InitiateCheckout', {
+    content_ids: cart.map(i => String(i.id)),
+    content_type: 'product',
+    num_items: cart.reduce((a, i) => a + i.qty, 0),
+    value: total,
+    currency: 'USD'
+  });
 }
 function closeCheckout(){ document.getElementById('checkoutModal').classList.remove('open'); }
 
@@ -1107,6 +1156,15 @@ function sendWA(){
   const total = cart.reduce((a,i) => a + i.price * i.qty, 0);
   const msg = `¡Hola! Soy ${name} y quisiera adquirir:\n\n${lines}\n\nTotal: $${total.toFixed(2)}\nCon envío a ${city}\nDirección: ${addr}\n\n¡Quedo pendiente de su confirmación! 💗`;
   window.open(`https://wa.me/593990788739?text=${encodeURIComponent(msg)}`, '_blank');
+  // Cliente potencial, no "compra": el pedido recién se confirma por WhatsApp,
+  // así que marcarlo como venta inflaría los reportes con pedidos que quizá no se cierren.
+  metaEvento('Lead', {
+    content_ids: cart.map(i => String(i.id)),
+    content_type: 'product',
+    num_items: cart.reduce((a, i) => a + i.qty, 0),
+    value: total,
+    currency: 'USD'
+  });
   closeCheckout();
   // El pedido ya salió: vaciamos para que al volver no encuentre lo mismo
   // y lo pida dos veces sin querer.
