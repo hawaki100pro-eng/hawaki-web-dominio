@@ -147,9 +147,9 @@ header{background:var(--header-bg);position:sticky;top:0;z-index:100;box-shadow:
 .ver-todos-card:hover{transform:translateY(-6px);}
 .vt-mas{font-size:1.9rem;font-weight:700;color:var(--rose-dark);line-height:1;}
 .vt-txt{font-size:.95rem;font-weight:700;color:var(--rose-dark);text-align:center;line-height:1.4;}
-.vt-ir{font-size:.78rem;font-weight:700;color:var(--rose-dark);}
+.vt-ico{width:38px;height:38px;color:var(--rose-dark);}
 .category-section.masc .ver-todos-card{background:var(--blue-light);border-color:var(--blue);}
-.category-section.masc .vt-txt,.category-section.masc .vt-ir{color:var(--blue-txt);}
+.category-section.masc .vt-txt,.category-section.masc .vt-ico{color:var(--blue-txt);}
 .category-section.abierta .ver-todos-card{display:none;}
 .category-section.scrollable .swipe-hint{display:flex;}
 .swipe-hint i{font-style:normal;display:inline-block;animation:nudge 1.3s ease-in-out infinite;}
@@ -780,8 +780,8 @@ function renderProducts(){
             ${list.map(p => cardHTML(p)).join('')}
             ${list.length > 2 ? `
               <button class="ver-todos-card" onclick="showCat('${cat}')">
+                <svg class="vt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
                 <span class="vt-txt">Ver todos los modelos de esta colección</span>
-                <span class="vt-ir">→</span>
               </button>` : ''}
           </div>
           <button class="row-arrow right" onclick="rowNav(this,1)" aria-label="Ver más modelos">›</button>
